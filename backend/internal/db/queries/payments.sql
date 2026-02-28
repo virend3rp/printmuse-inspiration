@@ -1,18 +1,18 @@
 -- name: CreatePayment :one
 INSERT INTO payments (order_id, razorpay_order_id, amount, currency)
-VALUES ($1, $2, $3, $4)
+VALUES (@order_id, @razorpay_order_id, @amount, @currency)
 RETURNING *;
 
 -- name: GetPaymentByRazorpayOrderID :one
 SELECT * FROM payments
-WHERE razorpay_order_id = $1
+WHERE razorpay_order_id = @razorpay_order_id
 LIMIT 1;
 
 -- name: UpdatePaymentStatus :one
 UPDATE payments
-SET status = $2,
-    razorpay_payment_id = $3,
-    reference = $4,
+SET status = @status,
+    razorpay_payment_id = @razorpay_payment_id,
+    reference = @reference,
     updated_at = NOW()
-WHERE id = $1
+WHERE id = @id
 RETURNING *;

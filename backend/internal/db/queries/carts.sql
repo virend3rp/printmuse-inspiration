@@ -1,13 +1,13 @@
 -- name: GetOrCreateCart :one
 INSERT INTO carts (user_id)
-VALUES ($1)
+VALUES (@user_id)
 ON CONFLICT (user_id)
 DO UPDATE SET updated_at = NOW()
 RETURNING *;
 
 -- name: AddCartItem :one
 INSERT INTO cart_items (cart_id, variant_id, qty)
-VALUES ($1, $2, $3)
+VALUES (@cart_id, @variant_id, @qty)
 ON CONFLICT (cart_id, variant_id)
 DO UPDATE SET qty = cart_items.qty + EXCLUDED.qty
 RETURNING *;
@@ -28,10 +28,12 @@ SELECT
 FROM cart_items ci
 JOIN variants v ON v.id = ci.variant_id
 JOIN products p ON p.id = v.product_id
-WHERE ci.cart_id = $1;
+WHERE ci.cart_id = @cart_id;
 
 -- name: RemoveCartItem :exec
-DELETE FROM cart_items WHERE id = $1 AND cart_id = $2;
+DELETE FROM cart_items
+WHERE id = @id AND cart_id = @cart_id;
 
 -- name: ClearCart :exec
-DELETE FROM cart_items WHERE cart_id = $1;
+DELETE FROM cart_items
+WHERE cart_id = @cart_id;

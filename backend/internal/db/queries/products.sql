@@ -19,39 +19,40 @@ SELECT p.*, COALESCE(
 ) AS variants
 FROM products p
 LEFT JOIN variants v ON v.product_id = p.id
-WHERE p.slug = $1 AND p.active = true
+WHERE p.slug = @slug AND p.active = true
 GROUP BY p.id;
 
 -- name: CreateProduct :one
 INSERT INTO products (name, slug, description, images)
-VALUES ($1, $2, $3, $4)
+VALUES (@name, @slug, @description, @images)
 RETURNING *;
 
 -- name: UpdateProduct :one
 UPDATE products
-SET name = $2,
-    description = $3,
-    images = $4,
-    active = $5,
+SET name = @name,
+    description = @description,
+    images = @images,
+    active = @active,
     updated_at = NOW()
-WHERE id = $1
+WHERE id = @id
 RETURNING *;
 
 -- name: CreateVariant :one
 INSERT INTO variants (product_id, sku, name, price, stock)
-VALUES ($1, $2, $3, $4, $5)
+VALUES (@product_id, @sku, @name, @price, @stock)
 RETURNING *;
 
 -- name: GetVariantByID :one
-SELECT * FROM variants WHERE id = $1;
+SELECT * FROM variants
+WHERE id = @id;
 
 -- name: LockVariantStock :one
 UPDATE variants
-SET stock = stock - $2
-WHERE id = $1 AND stock >= $2
+SET stock = stock - @qty
+WHERE id = @id AND stock >= @qty
 RETURNING *;
 
 -- name: ReleaseVariantStock :exec
 UPDATE variants
-SET stock = stock + $2
-WHERE id = $1;
+SET stock = stock + @qty
+WHERE id = @id;

@@ -1,11 +1,11 @@
 -- name: CreateOrder :one
 INSERT INTO orders (user_id, status, total, expires_at)
-VALUES ($1, 'pending', $2, NOW() + INTERVAL '15 minutes')
+VALUES (@user_id, 'pending', @total, NOW() + INTERVAL '15 minutes')
 RETURNING *;
 
 -- name: CreateOrderItem :one
 INSERT INTO order_items (order_id, variant_id, qty, price)
-VALUES ($1, $2, $3, $4)
+VALUES (@order_id, @variant_id, @qty, @price)
 RETURNING *;
 
 -- name: GetOrderByID :one
@@ -16,14 +16,14 @@ SELECT o.*, COALESCE(
 ) AS items
 FROM orders o
 LEFT JOIN order_items oi ON oi.order_id = o.id
-WHERE o.id = $1
+WHERE o.id = @id
 GROUP BY o.id;
 
 -- name: UpdateOrderStatus :one
 UPDATE orders
-SET status = $2,
+SET status = @status,
     updated_at = NOW()
-WHERE id = $1
+WHERE id = @id
 RETURNING *;
 
 -- name: ListExpiredPendingOrders :many
