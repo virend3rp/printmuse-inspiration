@@ -16,6 +16,7 @@ import (
 	"github.com/virend3rp/ecommerce/backend/internal/catalog"
 	"github.com/virend3rp/ecommerce/backend/internal/cart"
 	"github.com/virend3rp/ecommerce/backend/internal/orders"
+	"github.com/virend3rp/ecommerce/backend/internal/payments"
 )
 
 func main() {
@@ -30,7 +31,7 @@ func main() {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer pool.Close()
-
+	orders.StartCleanupJob(pool)
 	r := chi.NewRouter()
 
 	// global middleware
@@ -74,6 +75,8 @@ r.Get("/orders/{id}", orders.GetOrder(pool))
 	if port == "" {
 		port = "8080"
 	}
+	r.Post("/orders/{orderId}/pay", payments.CreatePayment(pool))
+	r.Post("/webhooks/razorpay", payments.HandleWebhook(pool))
 
 	fmt.Printf("Server running on :%s\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, r))

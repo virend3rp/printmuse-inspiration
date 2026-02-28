@@ -24,8 +24,10 @@ UPDATE orders
 SET status = @status,
     updated_at = NOW()
 WHERE id = @id
+AND (
+    (status = 'pending' AND @status IN ('paid', 'expired'))
+)
 RETURNING *;
-
 -- name: ListExpiredPendingOrders :many
 SELECT * FROM orders
 WHERE status = 'pending'
@@ -35,3 +37,15 @@ AND expires_at < NOW();
 SELECT * FROM orders
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2;
+
+-- name: ListOrderItemsByOrderID :many
+SELECT *
+FROM order_items
+WHERE order_id = @order_id;
+
+-- name: GetPendingOrderByUserID :one
+SELECT *
+FROM orders
+WHERE user_id = @user_id
+AND status = 'pending'
+LIMIT 1;

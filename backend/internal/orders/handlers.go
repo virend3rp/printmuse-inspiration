@@ -22,6 +22,14 @@ func CreateOrder(db *sql.DB) http.HandlerFunc {
 
 		userID := uuid.MustParse(userIDStr)
 
+		// 🔒 Check existing pending order (outside transaction)
+		q := sqlcdb.New(db)
+		if _, err := q.GetPendingOrderByUserID(r.Context(), userID); err == nil {
+			utils.BadRequest(w, "you already have a pending order")
+			return
+		}
+
+		// Start transaction
 		tx, err := db.BeginTx(r.Context(), nil)
 		if err != nil {
 			utils.InternalError(w)
@@ -29,26 +37,26 @@ func CreateOrder(db *sql.DB) http.HandlerFunc {
 		}
 		defer tx.Rollback()
 
-		q := sqlcdb.New(tx)
+		qtx := sqlcdb.New(tx)
 
-		cart, err := q.GetOrCreateCart(r.Context(), userID)
+		cart, err := qtx.GetOrCreateCart(r.Context(), userID)
 		if err != nil {
 			utils.InternalError(w)
 			return
 		}
 
-		items, err := q.GetCartWithItems(r.Context(), cart.ID)
+		items, err := qtx.GetCartWithItems(r.Context(), cart.ID)
 		if err != nil || len(items) == 0 {
 			utils.BadRequest(w, "cart is empty")
 			return
 		}
 
-		var total int32 = 0
+		var total int32
 
 		// 1️⃣ Lock stock
 		for _, item := range items {
 
-			_, err := q.LockVariantStock(r.Context(), sqlcdb.LockVariantStockParams{
+			_, err := qtx.LockVariantStock(r.Context(), sqlcdb.LockVariantStockParams{
 				ID:  item.VariantID,
 				Qty: item.Qty,
 			})
@@ -61,7 +69,7 @@ func CreateOrder(db *sql.DB) http.HandlerFunc {
 		}
 
 		// 2️⃣ Create order
-		order, err := q.CreateOrder(r.Context(), sqlcdb.CreateOrderParams{
+		order, err := qtx.CreateOrder(r.Context(), sqlcdb.CreateOrderParams{
 			UserID: userID,
 			Total:  total,
 		})
@@ -72,7 +80,7 @@ func CreateOrder(db *sql.DB) http.HandlerFunc {
 
 		// 3️⃣ Create order items
 		for _, item := range items {
-			_, err := q.CreateOrderItem(r.Context(), sqlcdb.CreateOrderItemParams{
+			_, err := qtx.CreateOrderItem(r.Context(), sqlcdb.CreateOrderItemParams{
 				OrderID:  order.ID,
 				VariantID: item.VariantID,
 				Qty:      item.Qty,
@@ -85,8 +93,7 @@ func CreateOrder(db *sql.DB) http.HandlerFunc {
 		}
 
 		// 4️⃣ Clear cart
-		err = q.ClearCart(r.Context(), cart.ID)
-		if err != nil {
+		if err := qtx.ClearCart(r.Context(), cart.ID); err != nil {
 			utils.InternalError(w)
 			return
 		}

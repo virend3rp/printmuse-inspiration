@@ -110,6 +110,29 @@ func (q *Queries) GetOrderByID(ctx context.Context, id uuid.UUID) (GetOrderByIDR
 	return i, err
 }
 
+const getPendingOrderByUserID = `-- name: GetPendingOrderByUserID :one
+SELECT id, user_id, status, total, expires_at, created_at, updated_at
+FROM orders
+WHERE user_id = $1
+AND status = 'pending'
+LIMIT 1
+`
+
+func (q *Queries) GetPendingOrderByUserID(ctx context.Context, userID uuid.UUID) (Order, error) {
+	row := q.db.QueryRowContext(ctx, getPendingOrderByUserID, userID)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Status,
+		&i.Total,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listExpiredPendingOrders = `-- name: ListExpiredPendingOrders :many
 SELECT id, user_id, status, total, expires_at, created_at, updated_at FROM orders
 WHERE status = 'pending'
@@ -133,6 +156,42 @@ func (q *Queries) ListExpiredPendingOrders(ctx context.Context) ([]Order, error)
 			&i.ExpiresAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listOrderItemsByOrderID = `-- name: ListOrderItemsByOrderID :many
+SELECT id, order_id, variant_id, qty, price, created_at
+FROM order_items
+WHERE order_id = $1
+`
+
+func (q *Queries) ListOrderItemsByOrderID(ctx context.Context, orderID uuid.UUID) ([]OrderItem, error) {
+	rows, err := q.db.QueryContext(ctx, listOrderItemsByOrderID, orderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OrderItem
+	for rows.Next() {
+		var i OrderItem
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrderID,
+			&i.VariantID,
+			&i.Qty,
+			&i.Price,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -194,6 +253,9 @@ UPDATE orders
 SET status = $1,
     updated_at = NOW()
 WHERE id = $2
+AND (
+    (status = 'pending' AND $1 IN ('paid', 'expired'))
+)
 RETURNING id, user_id, status, total, expires_at, created_at, updated_at
 `
 
