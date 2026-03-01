@@ -19,4 +19,7 @@ require (
 	golang.org/x/time v0.14.0
 )
 
-require go.uber.org/multierr v1.10.0 // indirect
+require (
+	github.com/go-chi/cors v1.2.2 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
+)
