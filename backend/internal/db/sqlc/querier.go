@@ -37,12 +37,14 @@ type Querier interface {
 	ListOrderItemsByOrderID(ctx context.Context, orderID uuid.UUID) ([]OrderItem, error)
 	ListOrdersAdmin(ctx context.Context, arg ListOrdersAdminParams) ([]Order, error)
 	ListProducts(ctx context.Context, arg ListProductsParams) ([]ListProductsRow, error)
+	ListProductsAdmin(ctx context.Context, arg ListProductsAdminParams) ([]Product, error)
 	LockVariantStock(ctx context.Context, arg LockVariantStockParams) (Variant, error)
 	ReleaseVariantStock(ctx context.Context, arg ReleaseVariantStockParams) error
 	RemoveCartItem(ctx context.Context, arg RemoveCartItemParams) error
 	UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusParams) (Order, error)
 	UpdatePaymentStatus(ctx context.Context, arg UpdatePaymentStatusParams) (Payment, error)
 	UpdateProduct(ctx context.Context, arg UpdateProductParams) (Product, error)
+	UpdateVariant(ctx context.Context, arg UpdateVariantParams) (Variant, error)
 }
 
 var _ Querier = (*Queries)(nil)

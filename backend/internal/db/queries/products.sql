@@ -56,3 +56,19 @@ RETURNING *;
 UPDATE variants
 SET stock = stock + @qty
 WHERE id = @id;
+
+-- name: ListProductsAdmin :many
+SELECT *
+FROM products
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2;
+
+
+-- name: UpdateVariant :one
+UPDATE variants
+SET name = @name,
+    price = @price,
+    stock = @stock,
+    updated_at = NOW()
+WHERE id = @id
+RETURNING *;

@@ -8,13 +8,15 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
-	"go.uber.org/zap"
 	"github.com/joho/godotenv"
+	"go.uber.org/zap"
+
+	"github.com/virend3rp/ecommerce/backend/internal/admin"
 	"github.com/virend3rp/ecommerce/backend/internal/auth"
+	"github.com/virend3rp/ecommerce/backend/internal/cart"
+	"github.com/virend3rp/ecommerce/backend/internal/catalog"
 	"github.com/virend3rp/ecommerce/backend/internal/db"
 	"github.com/virend3rp/ecommerce/backend/internal/middleware"
-	"github.com/virend3rp/ecommerce/backend/internal/catalog"
-	"github.com/virend3rp/ecommerce/backend/internal/cart"
 	"github.com/virend3rp/ecommerce/backend/internal/orders"
 	"github.com/virend3rp/ecommerce/backend/internal/payments"
 )
@@ -22,61 +24,90 @@ import (
 func main() {
 	_ = godotenv.Load()
 
-	fmt.Println("DATABASE_URL =", os.Getenv("DATABASE_URL"))
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
+
 	pool, err := db.Connect(os.Getenv("DATABASE_URL"))
 	if err != nil {
-
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer pool.Close()
+
 	orders.StartCleanupJob(pool)
+
 	r := chi.NewRouter()
 
-	// global middleware
+	// Global middleware
 	r.Use(chimiddleware.RequestID)
 	r.Use(chimiddleware.RealIP)
 	r.Use(middleware.RequestLogger(logger))
 	r.Use(chimiddleware.Recoverer)
 
-	// health
+	// Health
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))
 	})
 
-	// api routes
-	r.Route("/api", func(r chi.Router) {
+	// -----------------------------
+	// API Routes
+	// -----------------------------
+	r.Route("/api", func(api chi.Router) {
 
-		r.Route("/auth", func(r chi.Router) {
+		// ---------- Public ----------
+		api.Route("/auth", func(authR chi.Router) {
+			authR.Use(middleware.RateLimiter(5, 2))
+			authR.Post("/register", auth.Register(pool))
+			authR.Post("/login", auth.Login(pool))
+			authR.Post("/refresh", auth.Refresh(pool))
+		})
 
-			// rate limit auth endpoints
-			r.Use(middleware.RateLimiter(5, 2))
+		api.Get("/products", catalog.ListProducts(pool))
+		api.Get("/products/{slug}", catalog.GetProduct(pool))
 
-			r.Post("/register", auth.Register(pool))
-			r.Post("/login", auth.Login(pool))
-			r.Post("/refresh", auth.Refresh(pool))
+		api.Post("/webhooks/razorpay", payments.HandleWebhook(pool))
+
+		// ---------- Protected ----------
+		api.Group(func(protected chi.Router) {
+			protected.Use(middleware.Authenticate)
+
+			// Cart
+			protected.Post("/cart/add", cart.AddItem(pool))
+			protected.Get("/cart", cart.GetCart(pool))
+			protected.Delete("/cart/{itemId}", cart.RemoveItem(pool))
+
+			// Orders
+			protected.With(middleware.RateLimiter(5, 2)).
+				Post("/orders", orders.CreateOrder(pool))
+
+			protected.Get("/orders/{id}", orders.GetOrder(pool))
+			protected.Post("/orders/{orderId}/pay", payments.CreatePayment(pool))
+		})
+
+		// ---------- Admin ----------
+		api.Route("/admin", func(adminR chi.Router) {
+			adminR.Use(middleware.Authenticate)
+			adminR.Use(middleware.RequireRole("admin"))
+
+			// Products
+			adminR.Post("/products", admin.CreateProduct(pool))
+			adminR.Put("/products", admin.UpdateProduct(pool))
+			adminR.Get("/products", admin.ListProducts(pool))
+			adminR.Put("/products/{id}/deactivate", admin.DeactivateProduct(pool))
+
+			// Variants
+			adminR.Post("/variants", admin.CreateVariant(pool))
+			adminR.Put("/variants", admin.UpdateVariant(pool))
+
+			// Orders
+			adminR.Get("/orders", admin.ListOrders(pool))
+			adminR.Put("/orders/status", admin.UpdateOrderStatus(pool))
 		})
 	})
-	r.Get("/products", catalog.ListProducts(pool))
-	r.Get("/products/{slug}", catalog.GetProduct(pool))
-	r.Group(func(r chi.Router) {
-	r.Use(middleware.Authenticate)
 
-	r.Post("/cart/add", cart.AddItem(pool))
-	r.Get("/cart", cart.GetCart(pool))
-	r.Delete("/cart/{itemId}", cart.RemoveItem(pool))
-})
-r.With(middleware.RateLimiter(5, 2)).
-	Post("/orders", orders.CreateOrder(pool))
-
-r.Get("/orders/{id}", orders.GetOrder(pool))
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-	r.Post("/orders/{orderId}/pay", payments.CreatePayment(pool))
-	r.Post("/webhooks/razorpay", payments.HandleWebhook(pool))
 
 	fmt.Printf("Server running on :%s\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, r))

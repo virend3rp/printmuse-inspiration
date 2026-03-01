@@ -209,6 +209,50 @@ func (q *Queries) ListProducts(ctx context.Context, arg ListProductsParams) ([]L
 	return items, nil
 }
 
+const listProductsAdmin = `-- name: ListProductsAdmin :many
+SELECT id, name, slug, description, images, active, created_at, updated_at
+FROM products
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type ListProductsAdminParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+func (q *Queries) ListProductsAdmin(ctx context.Context, arg ListProductsAdminParams) ([]Product, error) {
+	rows, err := q.db.QueryContext(ctx, listProductsAdmin, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Product
+	for rows.Next() {
+		var i Product
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Slug,
+			&i.Description,
+			pq.Array(&i.Images),
+			&i.Active,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockVariantStock = `-- name: LockVariantStock :one
 UPDATE variants
 SET stock = stock - $1
@@ -288,6 +332,44 @@ func (q *Queries) UpdateProduct(ctx context.Context, arg UpdateProductParams) (P
 		&i.Description,
 		pq.Array(&i.Images),
 		&i.Active,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateVariant = `-- name: UpdateVariant :one
+UPDATE variants
+SET name = $1,
+    price = $2,
+    stock = $3,
+    updated_at = NOW()
+WHERE id = $4
+RETURNING id, product_id, sku, name, price, stock, created_at, updated_at
+`
+
+type UpdateVariantParams struct {
+	Name  string    `json:"name"`
+	Price int32     `json:"price"`
+	Stock int32     `json:"stock"`
+	ID    uuid.UUID `json:"id"`
+}
+
+func (q *Queries) UpdateVariant(ctx context.Context, arg UpdateVariantParams) (Variant, error) {
+	row := q.db.QueryRowContext(ctx, updateVariant,
+		arg.Name,
+		arg.Price,
+		arg.Stock,
+		arg.ID,
+	)
+	var i Variant
+	err := row.Scan(
+		&i.ID,
+		&i.ProductID,
+		&i.Sku,
+		&i.Name,
+		&i.Price,
+		&i.Stock,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
