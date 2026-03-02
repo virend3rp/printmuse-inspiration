@@ -42,9 +42,9 @@ func main() {
 
 	r := chi.NewRouter()
 
-	// -----------------------------
-	// Global Middleware (Order Matters)
-	// -----------------------------
+	// ------------------------------------------------
+	// GLOBAL MIDDLEWARE (ALL r.Use MUST BE HERE)
+	// ------------------------------------------------
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000"},
@@ -59,20 +59,20 @@ func main() {
 	r.Use(middleware.RequestLogger(logger))
 	r.Use(chimiddleware.Recoverer)
 
-	// Health
+	// ------------------------------------------------
+	// ROUTES
+	// ------------------------------------------------
+
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))
 	})
 
-	// -----------------------------
-	// API Routes
-	// -----------------------------
-
 	r.Route("/api", func(api chi.Router) {
 
-		// Public
+		// ---------------- PUBLIC ----------------
 		api.Route("/auth", func(authR chi.Router) {
 			authR.Use(middleware.RateLimiter(5, 2))
+
 			authR.Post("/register", auth.Register(pool))
 			authR.Post("/login", auth.Login(pool))
 			authR.Post("/refresh", auth.Refresh(pool))
@@ -82,7 +82,7 @@ func main() {
 		api.Get("/products/{slug}", catalog.GetProduct(pool))
 		api.Post("/webhooks/razorpay", payments.HandleWebhook(pool))
 
-		// Protected
+		// ---------------- PROTECTED ----------------
 		api.Group(func(protected chi.Router) {
 			protected.Use(middleware.Authenticate)
 
@@ -97,7 +97,7 @@ func main() {
 			protected.Post("/orders/{orderId}/pay", payments.CreatePayment(pool))
 		})
 
-		// Admin
+		// ---------------- ADMIN ----------------
 		api.Route("/admin", func(adminR chi.Router) {
 			adminR.Use(middleware.Authenticate)
 			adminR.Use(middleware.RequireRole("admin"))
@@ -112,12 +112,14 @@ func main() {
 
 			adminR.Get("/orders", admin.ListOrders(pool))
 			adminR.Put("/orders/status", admin.UpdateOrderStatus(pool))
+
+			adminR.Post("/upload", admin.UploadImageHandler())
 		})
 	})
 
-	// -----------------------------
-	// Graceful Shutdown
-	// -----------------------------
+	// ------------------------------------------------
+	// GRACEFUL SHUTDOWN
+	// ------------------------------------------------
 
 	port := os.Getenv("PORT")
 	if port == "" {

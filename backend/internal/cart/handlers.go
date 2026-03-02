@@ -86,7 +86,17 @@ func GetCart(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		utils.OK(w, items)
+		var total int32
+		for _, item := range items {
+			total += item.Price * item.Qty
+		}
+
+		response := map[string]interface{}{
+			"items": items,
+			"total": total,
+		}
+
+		utils.OK(w, response)
 	}
 }
 

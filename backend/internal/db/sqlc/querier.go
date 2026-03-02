@@ -38,6 +38,7 @@ type Querier interface {
 	ListOrdersAdmin(ctx context.Context, arg ListOrdersAdminParams) ([]Order, error)
 	ListProducts(ctx context.Context, arg ListProductsParams) ([]ListProductsRow, error)
 	ListProductsAdmin(ctx context.Context, arg ListProductsAdminParams) ([]Product, error)
+	ListVariantsByProduct(ctx context.Context, productID uuid.UUID) ([]Variant, error)
 	LockVariantStock(ctx context.Context, arg LockVariantStockParams) (Variant, error)
 	ReleaseVariantStock(ctx context.Context, arg ReleaseVariantStockParams) error
 	RemoveCartItem(ctx context.Context, arg RemoveCartItemParams) error

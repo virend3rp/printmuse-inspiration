@@ -9,24 +9,27 @@ import (
 	sqlcdb "github.com/virend3rp/ecommerce/backend/internal/db/sqlc"
 	"github.com/virend3rp/ecommerce/backend/internal/utils"
 )
-
 func ListProducts(db *sql.DB) http.HandlerFunc {
-	q := sqlcdb.New(db)
-
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		q := sqlcdb.New(db)
 
 		limitStr := r.URL.Query().Get("limit")
 		offsetStr := r.URL.Query().Get("offset")
 
-		limit := int32(20)
+		limit := int32(10)
 		offset := int32(0)
 
-		if l, err := strconv.Atoi(limitStr); err == nil {
-			limit = int32(l)
+		if limitStr != "" {
+			if v, err := strconv.Atoi(limitStr); err == nil {
+				limit = int32(v)
+			}
 		}
 
-		if o, err := strconv.Atoi(offsetStr); err == nil {
-			offset = int32(o)
+		if offsetStr != "" {
+			if v, err := strconv.Atoi(offsetStr); err == nil {
+				offset = int32(v)
+			}
 		}
 
 		products, err := q.ListProducts(r.Context(), sqlcdb.ListProductsParams{
@@ -38,14 +41,38 @@ func ListProducts(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		utils.OK(w, products)
+		type ProductResponse struct {
+			ID          string                 `json:"id"`
+			Name        string                 `json:"name"`
+			Slug        string                 `json:"slug"`
+			Description string                 `json:"description"`
+			Images      []string               `json:"images"`
+			Variants    []sqlcdb.Variant       `json:"variants"`
+		}
+
+		var response []ProductResponse
+
+		for _, p := range products {
+			variants, _ := q.ListVariantsByProduct(r.Context(), p.ID)
+
+			response = append(response, ProductResponse{
+				ID:          p.ID.String(),
+				Name:        p.Name,
+				Slug:        p.Slug,
+				Description: p.Description,
+				Images:      p.Images,
+				Variants:    variants,
+			})
+		}
+
+		utils.OK(w, response)
 	}
 }
 
 func GetProduct(db *sql.DB) http.HandlerFunc {
-	q := sqlcdb.New(db)
-
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		q := sqlcdb.New(db)
 
 		slug := chi.URLParam(r, "slug")
 		if slug == "" {
@@ -59,6 +86,26 @@ func GetProduct(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		utils.OK(w, product)
+		variants, _ := q.ListVariantsByProduct(r.Context(), product.ID)
+
+		type ProductResponse struct {
+			ID          string           `json:"id"`
+			Name        string           `json:"name"`
+			Slug        string           `json:"slug"`
+			Description string           `json:"description"`
+			Images      []string         `json:"images"`
+			Variants    []sqlcdb.Variant `json:"variants"`
+		}
+
+		response := ProductResponse{
+			ID:          product.ID.String(),
+			Name:        product.Name,
+			Slug:        product.Slug,
+			Description: product.Description,
+			Images:      product.Images,
+			Variants:    variants,
+		}
+
+		utils.OK(w, response)
 	}
 }

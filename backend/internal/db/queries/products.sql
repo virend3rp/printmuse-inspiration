@@ -72,3 +72,9 @@ SET name = @name,
     updated_at = NOW()
 WHERE id = @id
 RETURNING *;
+
+-- name: ListVariantsByProduct :many
+SELECT id, product_id, sku, name, price, stock, created_at, updated_at
+FROM variants
+WHERE product_id = $1
+ORDER BY created_at;

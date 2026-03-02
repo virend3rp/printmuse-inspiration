@@ -253,6 +253,45 @@ func (q *Queries) ListProductsAdmin(ctx context.Context, arg ListProductsAdminPa
 	return items, nil
 }
 
+const listVariantsByProduct = `-- name: ListVariantsByProduct :many
+SELECT id, product_id, sku, name, price, stock, created_at, updated_at
+FROM variants
+WHERE product_id = $1
+ORDER BY created_at
+`
+
+func (q *Queries) ListVariantsByProduct(ctx context.Context, productID uuid.UUID) ([]Variant, error) {
+	rows, err := q.db.QueryContext(ctx, listVariantsByProduct, productID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Variant
+	for rows.Next() {
+		var i Variant
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProductID,
+			&i.Sku,
+			&i.Name,
+			&i.Price,
+			&i.Stock,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockVariantStock = `-- name: LockVariantStock :one
 UPDATE variants
 SET stock = stock - $1
