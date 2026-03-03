@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@next/font": "^14.2.15",
     "axios": "^1.13.6",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.575.0",

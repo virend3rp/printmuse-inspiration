@@ -4,13 +4,25 @@ import {
   createContext,
   useContext,
   useState,
+  useEffect,
   ReactNode,
 } from "react";
+import { apiFetch } from "@/lib/api";
+
+interface CartItem {
+  id: string;
+  qty: number;
+  product_name: string;
+  variant_name: string;
+  price: number;
+}
 
 interface CartContextType {
   isOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
+  items: CartItem[];
+  refreshCart: () => Promise<void>;
 }
 
 const CartContext =
@@ -22,6 +34,7 @@ export function CartProvider({
   children: ReactNode;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [items, setItems] = useState<CartItem[]>([]);
 
   function openCart() {
     setIsOpen(true);
@@ -31,9 +44,28 @@ export function CartProvider({
     setIsOpen(false);
   }
 
+  async function refreshCart() {
+    try {
+      const res = await apiFetch("/cart");
+      setItems(res.data || []);
+    } catch {
+      setItems([]);
+    }
+  }
+
+  useEffect(() => {
+    refreshCart();
+  }, []);
+
   return (
     <CartContext.Provider
-      value={{ isOpen, openCart, closeCart }}
+      value={{
+        isOpen,
+        openCart,
+        closeCart,
+        items,
+        refreshCart,
+      }}
     >
       {children}
     </CartContext.Provider>
