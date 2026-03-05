@@ -1,42 +1,59 @@
 package admin
 
 import (
-	"io"
 	"net/http"
-	"os"
 
 	"github.com/virend3rp/ecommerce/backend/internal/services"
 	"github.com/virend3rp/ecommerce/backend/internal/utils"
 )
 
-func UploadImageHandler() http.HandlerFunc {
+type uploadRequest struct {
+	Filename    string `json:"filename"`
+	ProductSlug string `json:"product_slug"`
+}
+
+type uploadResponse struct {
+	UploadURL string `json:"upload_url"`
+	FileURL   string `json:"file_url"`
+}
+
+func GenerateUploadURLHandler(uploadService *services.UploadService) http.HandlerFunc {
+
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		file, header, err := r.FormFile("image")
-		if err != nil {
-			utils.BadRequest(w, "invalid file")
+		var req uploadRequest
+
+		if err := utils.DecodeJSON(r, &req); err != nil {
+			utils.BadRequest(w, "invalid request body")
 			return
 		}
-		defer file.Close()
 
-		// Save temporarily
-		tmpFile, err := os.CreateTemp("", header.Filename)
+		if req.Filename == "" {
+			utils.BadRequest(w, "filename is required")
+			return
+		}
+
+		if req.ProductSlug == "" {
+			utils.BadRequest(w, "product_slug is required")
+			return
+		}
+
+		uploadURL, fileURL, err := uploadService.GenerateUploadURL(
+			r.Context(),
+			req.ProductSlug,
+			req.Filename,
+		)
+
 		if err != nil {
 			utils.InternalError(w)
 			return
 		}
-		defer os.Remove(tmpFile.Name())
 
-		io.Copy(tmpFile, file)
-
-		url, err := services.UploadImage(tmpFile.Name())
-		if err != nil {
-			utils.InternalError(w)
-			return
+		resp := uploadResponse{
+			UploadURL: uploadURL,
+			FileURL:   fileURL,
 		}
 
-		utils.OK(w, map[string]string{
-			"url": url,
-		})
+		utils.OK(w, resp)
 	}
 }

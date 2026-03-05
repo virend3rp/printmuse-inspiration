@@ -162,6 +162,7 @@ type Product struct {
 	Active      bool      `json:"active"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+	Category    string    `json:"category"`
 }
 
 type RefreshToken struct {

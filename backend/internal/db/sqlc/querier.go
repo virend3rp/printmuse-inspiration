@@ -20,7 +20,11 @@ type Querier interface {
 	CreateProduct(ctx context.Context, arg CreateProductParams) (Product, error)
 	CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) (RefreshToken, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	// =========================================
+	// VARIANTS
+	// =========================================
 	CreateVariant(ctx context.Context, arg CreateVariantParams) (Variant, error)
+	DeactivateProduct(ctx context.Context, id uuid.UUID) (Product, error)
 	DeleteRefreshToken(ctx context.Context, tokenHash string) error
 	DeleteUserRefreshTokens(ctx context.Context, userID uuid.UUID) error
 	GetCartWithItems(ctx context.Context, cartID uuid.UUID) ([]GetCartWithItemsRow, error)
@@ -28,7 +32,11 @@ type Querier interface {
 	GetOrderByID(ctx context.Context, id uuid.UUID) (GetOrderByIDRow, error)
 	GetPaymentByRazorpayOrderID(ctx context.Context, razorpayOrderID sql.NullString) (Payment, error)
 	GetPendingOrderByUserID(ctx context.Context, userID uuid.UUID) (Order, error)
+	// STRICT VERSION (RECOMMENDED)
+	GetProductByCategoryAndSlug(ctx context.Context, arg GetProductByCategoryAndSlugParams) (GetProductByCategoryAndSlugRow, error)
+	GetProductByID(ctx context.Context, id uuid.UUID) (Product, error)
 	GetProductBySlug(ctx context.Context, slug string) (GetProductBySlugRow, error)
+	GetProductWithVariantsByID(ctx context.Context, id uuid.UUID) (GetProductWithVariantsByIDRow, error)
 	GetRefreshToken(ctx context.Context, tokenHash string) (RefreshToken, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
@@ -36,9 +44,19 @@ type Querier interface {
 	ListExpiredPendingOrders(ctx context.Context) ([]Order, error)
 	ListOrderItemsByOrderID(ctx context.Context, orderID uuid.UUID) ([]OrderItem, error)
 	ListOrdersAdmin(ctx context.Context, arg ListOrdersAdminParams) ([]Order, error)
+	// =========================================
+	// PRODUCTS + VARIANTS (PUBLIC)
+	// =========================================
 	ListProducts(ctx context.Context, arg ListProductsParams) ([]ListProductsRow, error)
+	// =========================================
+	// PRODUCTS (ADMIN)
+	// =========================================
 	ListProductsAdmin(ctx context.Context, arg ListProductsAdminParams) ([]Product, error)
+	ListProductsByCategory(ctx context.Context, arg ListProductsByCategoryParams) ([]ListProductsByCategoryRow, error)
 	ListVariantsByProduct(ctx context.Context, productID uuid.UUID) ([]Variant, error)
+	// =========================================
+	// STOCK MANAGEMENT
+	// =========================================
 	LockVariantStock(ctx context.Context, arg LockVariantStockParams) (Variant, error)
 	ReleaseVariantStock(ctx context.Context, arg ReleaseVariantStockParams) error
 	RemoveCartItem(ctx context.Context, arg RemoveCartItemParams) error

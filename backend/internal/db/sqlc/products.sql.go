@@ -14,15 +14,28 @@ import (
 )
 
 const createProduct = `-- name: CreateProduct :one
-INSERT INTO products (name, slug, description, images)
-VALUES ($1, $2, $3, $4)
-RETURNING id, name, slug, description, images, active, created_at, updated_at
+INSERT INTO products (
+  name,
+  slug,
+  description,
+  category,
+  images
+)
+VALUES (
+  $1,
+  $2,
+  $3,
+  $4,
+  $5
+)
+RETURNING id, name, slug, description, images, active, created_at, updated_at, category
 `
 
 type CreateProductParams struct {
 	Name        string   `json:"name"`
 	Slug        string   `json:"slug"`
 	Description string   `json:"description"`
+	Category    string   `json:"category"`
 	Images      []string `json:"images"`
 }
 
@@ -31,6 +44,7 @@ func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (P
 		arg.Name,
 		arg.Slug,
 		arg.Description,
+		arg.Category,
 		pq.Array(arg.Images),
 	)
 	var i Product
@@ -43,13 +57,27 @@ func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (P
 		&i.Active,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Category,
 	)
 	return i, err
 }
 
 const createVariant = `-- name: CreateVariant :one
-INSERT INTO variants (product_id, sku, name, price, stock)
-VALUES ($1, $2, $3, $4, $5)
+
+INSERT INTO variants (
+  product_id,
+  sku,
+  name,
+  price,
+  stock
+)
+VALUES (
+  $1,
+  $2,
+  $3,
+  $4,
+  $5
+)
 RETURNING id, product_id, sku, name, price, stock, created_at, updated_at
 `
 
@@ -61,6 +89,9 @@ type CreateVariantParams struct {
 	Stock     int32     `json:"stock"`
 }
 
+// =========================================
+// VARIANTS
+// =========================================
 func (q *Queries) CreateVariant(ctx context.Context, arg CreateVariantParams) (Variant, error) {
 	row := q.db.QueryRowContext(ctx, createVariant,
 		arg.ProductID,
@@ -83,15 +114,115 @@ func (q *Queries) CreateVariant(ctx context.Context, arg CreateVariantParams) (V
 	return i, err
 }
 
-const getProductBySlug = `-- name: GetProductBySlug :one
-SELECT p.id, p.name, p.slug, p.description, p.images, p.active, p.created_at, p.updated_at, COALESCE(
+const deactivateProduct = `-- name: DeactivateProduct :one
+UPDATE products
+SET active = false,
+    updated_at = NOW()
+WHERE id = $1
+RETURNING id, name, slug, description, images, active, created_at, updated_at, category
+`
+
+func (q *Queries) DeactivateProduct(ctx context.Context, id uuid.UUID) (Product, error) {
+	row := q.db.QueryRowContext(ctx, deactivateProduct, id)
+	var i Product
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Slug,
+		&i.Description,
+		pq.Array(&i.Images),
+		&i.Active,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Category,
+	)
+	return i, err
+}
+
+const getProductByCategoryAndSlug = `-- name: GetProductByCategoryAndSlug :one
+SELECT p.id, p.name, p.slug, p.description, p.images, p.active, p.created_at, p.updated_at, p.category, COALESCE(
     json_agg(v ORDER BY v.created_at)
     FILTER (WHERE v.id IS NOT NULL),
     '[]'
 ) AS variants
 FROM products p
 LEFT JOIN variants v ON v.product_id = p.id
-WHERE p.slug = $1 AND p.active = true
+WHERE p.slug = $1
+  AND p.category = $2
+  AND p.active = true
+GROUP BY p.id
+`
+
+type GetProductByCategoryAndSlugParams struct {
+	Slug     string `json:"slug"`
+	Category string `json:"category"`
+}
+
+type GetProductByCategoryAndSlugRow struct {
+	ID          uuid.UUID   `json:"id"`
+	Name        string      `json:"name"`
+	Slug        string      `json:"slug"`
+	Description string      `json:"description"`
+	Images      []string    `json:"images"`
+	Active      bool        `json:"active"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at"`
+	Category    string      `json:"category"`
+	Variants    interface{} `json:"variants"`
+}
+
+// STRICT VERSION (RECOMMENDED)
+func (q *Queries) GetProductByCategoryAndSlug(ctx context.Context, arg GetProductByCategoryAndSlugParams) (GetProductByCategoryAndSlugRow, error) {
+	row := q.db.QueryRowContext(ctx, getProductByCategoryAndSlug, arg.Slug, arg.Category)
+	var i GetProductByCategoryAndSlugRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Slug,
+		&i.Description,
+		pq.Array(&i.Images),
+		&i.Active,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Category,
+		&i.Variants,
+	)
+	return i, err
+}
+
+const getProductByID = `-- name: GetProductByID :one
+SELECT id, name, slug, description, images, active, created_at, updated_at, category
+FROM products
+WHERE id = $1
+`
+
+func (q *Queries) GetProductByID(ctx context.Context, id uuid.UUID) (Product, error) {
+	row := q.db.QueryRowContext(ctx, getProductByID, id)
+	var i Product
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Slug,
+		&i.Description,
+		pq.Array(&i.Images),
+		&i.Active,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Category,
+	)
+	return i, err
+}
+
+const getProductBySlug = `-- name: GetProductBySlug :one
+SELECT p.id, p.name, p.slug, p.description, p.images, p.active, p.created_at, p.updated_at, p.category, COALESCE(
+    json_agg(v ORDER BY v.created_at)
+    FILTER (WHERE v.id IS NOT NULL),
+    '[]'
+) AS variants
+FROM products p
+LEFT JOIN variants v ON v.product_id = p.id
+WHERE p.slug = $1
+  AND p.active = true
 GROUP BY p.id
 `
 
@@ -104,6 +235,7 @@ type GetProductBySlugRow struct {
 	Active      bool        `json:"active"`
 	CreatedAt   time.Time   `json:"created_at"`
 	UpdatedAt   time.Time   `json:"updated_at"`
+	Category    string      `json:"category"`
 	Variants    interface{} `json:"variants"`
 }
 
@@ -119,13 +251,58 @@ func (q *Queries) GetProductBySlug(ctx context.Context, slug string) (GetProduct
 		&i.Active,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Category,
+		&i.Variants,
+	)
+	return i, err
+}
+
+const getProductWithVariantsByID = `-- name: GetProductWithVariantsByID :one
+SELECT p.id, p.name, p.slug, p.description, p.images, p.active, p.created_at, p.updated_at, p.category, COALESCE(
+    json_agg(v ORDER BY v.created_at)
+    FILTER (WHERE v.id IS NOT NULL),
+    '[]'
+) AS variants
+FROM products p
+LEFT JOIN variants v ON v.product_id = p.id
+WHERE p.id = $1
+GROUP BY p.id
+`
+
+type GetProductWithVariantsByIDRow struct {
+	ID          uuid.UUID   `json:"id"`
+	Name        string      `json:"name"`
+	Slug        string      `json:"slug"`
+	Description string      `json:"description"`
+	Images      []string    `json:"images"`
+	Active      bool        `json:"active"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at"`
+	Category    string      `json:"category"`
+	Variants    interface{} `json:"variants"`
+}
+
+func (q *Queries) GetProductWithVariantsByID(ctx context.Context, id uuid.UUID) (GetProductWithVariantsByIDRow, error) {
+	row := q.db.QueryRowContext(ctx, getProductWithVariantsByID, id)
+	var i GetProductWithVariantsByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Slug,
+		&i.Description,
+		pq.Array(&i.Images),
+		&i.Active,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Category,
 		&i.Variants,
 	)
 	return i, err
 }
 
 const getVariantByID = `-- name: GetVariantByID :one
-SELECT id, product_id, sku, name, price, stock, created_at, updated_at FROM variants
+SELECT id, product_id, sku, name, price, stock, created_at, updated_at
+FROM variants
 WHERE id = $1
 `
 
@@ -146,7 +323,8 @@ func (q *Queries) GetVariantByID(ctx context.Context, id uuid.UUID) (Variant, er
 }
 
 const listProducts = `-- name: ListProducts :many
-SELECT p.id, p.name, p.slug, p.description, p.images, p.active, p.created_at, p.updated_at, COALESCE(
+
+SELECT p.id, p.name, p.slug, p.description, p.images, p.active, p.created_at, p.updated_at, p.category, COALESCE(
     json_agg(v ORDER BY v.created_at)
     FILTER (WHERE v.id IS NOT NULL),
     '[]'
@@ -173,9 +351,13 @@ type ListProductsRow struct {
 	Active      bool        `json:"active"`
 	CreatedAt   time.Time   `json:"created_at"`
 	UpdatedAt   time.Time   `json:"updated_at"`
+	Category    string      `json:"category"`
 	Variants    interface{} `json:"variants"`
 }
 
+// =========================================
+// PRODUCTS + VARIANTS (PUBLIC)
+// =========================================
 func (q *Queries) ListProducts(ctx context.Context, arg ListProductsParams) ([]ListProductsRow, error) {
 	rows, err := q.db.QueryContext(ctx, listProducts, arg.Limit, arg.Offset)
 	if err != nil {
@@ -194,6 +376,7 @@ func (q *Queries) ListProducts(ctx context.Context, arg ListProductsParams) ([]L
 			&i.Active,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Category,
 			&i.Variants,
 		); err != nil {
 			return nil, err
@@ -210,7 +393,8 @@ func (q *Queries) ListProducts(ctx context.Context, arg ListProductsParams) ([]L
 }
 
 const listProductsAdmin = `-- name: ListProductsAdmin :many
-SELECT id, name, slug, description, images, active, created_at, updated_at
+
+SELECT id, name, slug, description, images, active, created_at, updated_at, category
 FROM products
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
@@ -221,6 +405,9 @@ type ListProductsAdminParams struct {
 	Offset int32 `json:"offset"`
 }
 
+// =========================================
+// PRODUCTS (ADMIN)
+// =========================================
 func (q *Queries) ListProductsAdmin(ctx context.Context, arg ListProductsAdminParams) ([]Product, error) {
 	rows, err := q.db.QueryContext(ctx, listProductsAdmin, arg.Limit, arg.Offset)
 	if err != nil {
@@ -239,6 +426,75 @@ func (q *Queries) ListProductsAdmin(ctx context.Context, arg ListProductsAdminPa
 			&i.Active,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Category,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listProductsByCategory = `-- name: ListProductsByCategory :many
+SELECT p.id, p.name, p.slug, p.description, p.images, p.active, p.created_at, p.updated_at, p.category, COALESCE(
+    json_agg(v ORDER BY v.created_at)
+    FILTER (WHERE v.id IS NOT NULL),
+    '[]'
+) AS variants
+FROM products p
+LEFT JOIN variants v ON v.product_id = p.id
+WHERE p.active = true
+  AND p.category = $3
+GROUP BY p.id
+ORDER BY p.created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type ListProductsByCategoryParams struct {
+	Limit    int32  `json:"limit"`
+	Offset   int32  `json:"offset"`
+	Category string `json:"category"`
+}
+
+type ListProductsByCategoryRow struct {
+	ID          uuid.UUID   `json:"id"`
+	Name        string      `json:"name"`
+	Slug        string      `json:"slug"`
+	Description string      `json:"description"`
+	Images      []string    `json:"images"`
+	Active      bool        `json:"active"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at"`
+	Category    string      `json:"category"`
+	Variants    interface{} `json:"variants"`
+}
+
+func (q *Queries) ListProductsByCategory(ctx context.Context, arg ListProductsByCategoryParams) ([]ListProductsByCategoryRow, error) {
+	rows, err := q.db.QueryContext(ctx, listProductsByCategory, arg.Limit, arg.Offset, arg.Category)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListProductsByCategoryRow
+	for rows.Next() {
+		var i ListProductsByCategoryRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Slug,
+			&i.Description,
+			pq.Array(&i.Images),
+			&i.Active,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Category,
+			&i.Variants,
 		); err != nil {
 			return nil, err
 		}
@@ -293,9 +549,11 @@ func (q *Queries) ListVariantsByProduct(ctx context.Context, productID uuid.UUID
 }
 
 const lockVariantStock = `-- name: LockVariantStock :one
+
 UPDATE variants
 SET stock = stock - $1
-WHERE id = $2 AND stock >= $1
+WHERE id = $2
+  AND stock >= $1
 RETURNING id, product_id, sku, name, price, stock, created_at, updated_at
 `
 
@@ -304,6 +562,9 @@ type LockVariantStockParams struct {
 	ID  uuid.UUID `json:"id"`
 }
 
+// =========================================
+// STOCK MANAGEMENT
+// =========================================
 func (q *Queries) LockVariantStock(ctx context.Context, arg LockVariantStockParams) (Variant, error) {
 	row := q.db.QueryRowContext(ctx, lockVariantStock, arg.Qty, arg.ID)
 	var i Variant
@@ -341,16 +602,18 @@ UPDATE products
 SET name = $1,
     description = $2,
     images = $3,
-    active = $4,
+    category = $4,
+    active = $5,
     updated_at = NOW()
-WHERE id = $5
-RETURNING id, name, slug, description, images, active, created_at, updated_at
+WHERE id = $6
+RETURNING id, name, slug, description, images, active, created_at, updated_at, category
 `
 
 type UpdateProductParams struct {
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
 	Images      []string  `json:"images"`
+	Category    string    `json:"category"`
 	Active      bool      `json:"active"`
 	ID          uuid.UUID `json:"id"`
 }
@@ -360,6 +623,7 @@ func (q *Queries) UpdateProduct(ctx context.Context, arg UpdateProductParams) (P
 		arg.Name,
 		arg.Description,
 		pq.Array(arg.Images),
+		arg.Category,
 		arg.Active,
 		arg.ID,
 	)
@@ -373,6 +637,7 @@ func (q *Queries) UpdateProduct(ctx context.Context, arg UpdateProductParams) (P
 		&i.Active,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Category,
 	)
 	return i, err
 }

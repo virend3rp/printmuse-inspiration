@@ -2,30 +2,55 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"path/filepath"
 
-	"github.com/cloudinary/cloudinary-go/v2"
-	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
+	"github.com/google/uuid"
+	"github.com/virend3rp/ecommerce/backend/internal/storage"
 )
 
-func UploadImage(filePath string) (string, error) {
-	cld, err := cloudinary.NewFromParams(
-		os.Getenv("CLOUDINARY_CLOUD_NAME"),
-		os.Getenv("CLOUDINARY_API_KEY"),
-		os.Getenv("CLOUDINARY_API_SECRET"),
-	)
-	if err != nil {
-		return "", err
+type UploadService struct {
+	storage *storage.S3Uploader
+}
+
+func NewUploadService(s *storage.S3Uploader) *UploadService {
+	return &UploadService{
+		storage: s,
+	}
+}
+
+func (s *UploadService) GenerateUploadURL(
+	ctx context.Context,
+	productSlug string,
+	filename string,
+) (string, string, error) {
+
+	baseURL := os.Getenv("IMAGE_BASE_URL")
+	if baseURL == "" {
+		return "", "", fmt.Errorf("IMAGE_BASE_URL not configured")
 	}
 
-	resp, err := cld.Upload.Upload(
-		context.Background(),
-		filePath,
-		uploader.UploadParams{},
-	)
-	if err != nil {
-		return "", err
+	ext := filepath.Ext(filename)
+	if ext == "" {
+		return "", "", fmt.Errorf("invalid filename")
 	}
 
-	return resp.SecureURL, nil
+	fileID := uuid.New().String()
+
+	key := fmt.Sprintf(
+		"products/%s/%s%s",
+		productSlug,
+		fileID,
+		ext,
+	)
+
+	uploadURL, err := s.storage.GeneratePresignedUploadURL(ctx, key)
+	if err != nil {
+		return "", "", err
+	}
+
+	fileURL := fmt.Sprintf("%s/%s", baseURL, key)
+
+	return uploadURL, fileURL, nil
 }

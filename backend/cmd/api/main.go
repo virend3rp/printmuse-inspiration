@@ -24,27 +24,69 @@ import (
 	"github.com/virend3rp/ecommerce/backend/internal/middleware"
 	"github.com/virend3rp/ecommerce/backend/internal/orders"
 	"github.com/virend3rp/ecommerce/backend/internal/payments"
+	"github.com/virend3rp/ecommerce/backend/internal/storage"
+	"github.com/virend3rp/ecommerce/backend/internal/services"
 )
 
 func main() {
+
+	// ------------------------------------------------
+	// LOAD ENV
+	// ------------------------------------------------
+
 	_ = godotenv.Load()
 
-	logger, _ := zap.NewProduction()
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	// ------------------------------------------------
+	// LOGGER
+	// ------------------------------------------------
+
+	logger, err := zap.NewProduction()
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer logger.Sync()
+
+	// ------------------------------------------------
+	// DATABASE
+	// ------------------------------------------------
 
 	pool, err := db.Connect(os.Getenv("DATABASE_URL"))
 	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
+		logger.Fatal("database connection failed", zap.Error(err))
 	}
 	defer pool.Close()
 
+	// ------------------------------------------------
+	// S3 STORAGE
+	// ------------------------------------------------
+		bucket := os.Getenv("S3_BUCKET")
+		region := os.Getenv("AWS_REGION")
+
+		fmt.Println("BUCKET:", bucket)
+
+		s3Uploader, err := storage.NewS3Uploader(bucket, region)
+		if err != nil {
+			logger.Fatal("failed to initialize S3 uploader", zap.Error(err))
+		}
+
+		uploadService := services.NewUploadService(s3Uploader)
+
+	// ------------------------------------------------
+	// BACKGROUND JOBS
+	// ------------------------------------------------
+
 	orders.StartCleanupJob(pool)
 
-	r := chi.NewRouter()
+	// ------------------------------------------------
+	// ROUTER
+	// ------------------------------------------------
 
-	// ------------------------------------------------
-	// GLOBAL MIDDLEWARE (ALL r.Use MUST BE HERE)
-	// ------------------------------------------------
+	r := chi.NewRouter()
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000"},
@@ -60,16 +102,21 @@ func main() {
 	r.Use(chimiddleware.Recoverer)
 
 	// ------------------------------------------------
-	// ROUTES
+	// HEALTH CHECK
 	// ------------------------------------------------
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))
 	})
 
+	// ------------------------------------------------
+	// API ROUTES
+	// ------------------------------------------------
+
 	r.Route("/api", func(api chi.Router) {
 
 		// ---------------- PUBLIC ----------------
+
 		api.Route("/auth", func(authR chi.Router) {
 			authR.Use(middleware.RateLimiter(5, 2))
 
@@ -80,10 +127,13 @@ func main() {
 
 		api.Get("/products", catalog.ListProducts(pool))
 		api.Get("/products/{slug}", catalog.GetProduct(pool))
+
 		api.Post("/webhooks/razorpay", payments.HandleWebhook(pool))
 
 		// ---------------- PROTECTED ----------------
+
 		api.Group(func(protected chi.Router) {
+
 			protected.Use(middleware.Authenticate)
 
 			protected.Post("/cart/add", cart.AddItem(pool))
@@ -98,33 +148,35 @@ func main() {
 		})
 
 		// ---------------- ADMIN ----------------
+
 		api.Route("/admin", func(adminR chi.Router) {
+
 			adminR.Use(middleware.Authenticate)
 			adminR.Use(middleware.RequireRole("admin"))
 
+			// PRODUCTS
 			adminR.Post("/products", admin.CreateProduct(pool))
 			adminR.Put("/products", admin.UpdateProduct(pool))
 			adminR.Get("/products", admin.ListProducts(pool))
+			adminR.Get("/products/{id}", admin.GetProductByID(pool)) // add this
 			adminR.Put("/products/{id}/deactivate", admin.DeactivateProduct(pool))
-
+			
+			// VARIANTS
 			adminR.Post("/variants", admin.CreateVariant(pool))
 			adminR.Put("/variants", admin.UpdateVariant(pool))
 
+			// ORDERS
 			adminR.Get("/orders", admin.ListOrders(pool))
 			adminR.Put("/orders/status", admin.UpdateOrderStatus(pool))
 
-			adminR.Post("/upload", admin.UploadImageHandler())
+			// IMAGE UPLOAD
+			adminR.Post("/upload-url", admin.GenerateUploadURLHandler(uploadService))
 		})
 	})
 
 	// ------------------------------------------------
-	// GRACEFUL SHUTDOWN
+	// SERVER
 	// ------------------------------------------------
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
 
 	server := &http.Server{
 		Addr:    ":" + port,
@@ -132,23 +184,28 @@ func main() {
 	}
 
 	go func() {
+		fmt.Println("BUCKET:", os.Getenv("S3_BUCKET"))
 		fmt.Printf("Server running on :%s\n", port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen error: %v", err)
+			logger.Fatal("server failed", zap.Error(err))
 		}
 	}()
 
+	// ------------------------------------------------
+	// GRACEFUL SHUTDOWN
+	// ------------------------------------------------
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
 
+	<-quit
 	fmt.Println("Shutting down server...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		log.Printf("server shutdown failed: %v\n", err)
+		logger.Error("server shutdown failed", zap.Error(err))
 	}
 
 	fmt.Println("Server exited properly")

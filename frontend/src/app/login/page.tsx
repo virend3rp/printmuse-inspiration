@@ -10,38 +10,48 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const redirect = searchParams.get("redirect") || "/products";
+const redirect = searchParams.get("redirect") || "/"; 
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  e.preventDefault();
 
-    try {
-      await login(email, password);
-      router.push(redirect);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+  const trimmedEmail = email.trim();
+  const trimmedPassword = password.trim();
+
+  if (!trimmedEmail || !trimmedPassword) {
+    setError("Email and password are required.");
+    return;
   }
 
+  setError(null);
+  setLoading(true);
+
+  try {
+    await login(trimmedEmail, trimmedPassword);
+    router.push(redirect);
+    router.refresh(); // refresh layout so navbar updates
+  } catch {
+    setError("Invalid email or password.");
+  } finally {
+    setLoading(false);
+  }
+}
+
   return (
-    <main className="min-h-screen flex items-center justify-center p-6">
+    <main className="min-h-screen flex items-center justify-center p-6 bg-neutral-50">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md bg-white p-6 rounded shadow flex flex-col gap-4"
+        className="w-full max-w-md bg-white p-8 rounded-lg border border-neutral-200 flex flex-col gap-5"
       >
-        <h1 className="text-2xl font-bold text-center text-red-900">Login</h1>
+        <h1 className="text-2xl font-semibold text-center">Login</h1>
 
         {error && (
-          <p className="text-red-500 text-sm text-center">{error}</p>
+          <p className="text-red-600 text-sm text-center">{error}</p>
         )}
 
         <input
@@ -50,7 +60,7 @@ export default function LoginPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="border p-2 rounded  text-green-500"
+          className="border border-neutral-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
         />
 
         <input
@@ -59,22 +69,22 @@ export default function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="border p-2 rounded text-green-500"
+          className="border border-neutral-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
         />
 
         <button
           type="submit"
-          disabled={loading}
-          className="bg-black text-white py-2 rounded disabled:opacity-50"
+          disabled={loading || !email || !password}
+          className="bg-black text-white py-3 rounded-md disabled:opacity-50"
         >
           {loading ? "Logging in..." : "Login"}
         </button>
 
-        <p className="text-sm text-center">
+        <p className="text-sm text-center text-neutral-600">
           Don't have an account?{" "}
           <Link
             href={`/register?redirect=${redirect}`}
-            className="text-blue-600 underline"
+            className="text-black underline"
           >
             Register
           </Link>

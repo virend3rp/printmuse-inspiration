@@ -9,6 +9,7 @@ import (
 	sqlcdb "github.com/virend3rp/ecommerce/backend/internal/db/sqlc"
 	"github.com/virend3rp/ecommerce/backend/internal/utils"
 )
+
 func ListProducts(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -16,53 +17,87 @@ func ListProducts(db *sql.DB) http.HandlerFunc {
 
 		limitStr := r.URL.Query().Get("limit")
 		offsetStr := r.URL.Query().Get("offset")
+		category := r.URL.Query().Get("category")
 
 		limit := int32(10)
 		offset := int32(0)
 
-		if limitStr != "" {
-			if v, err := strconv.Atoi(limitStr); err == nil {
-				limit = int32(v)
-			}
+		if v, err := strconv.Atoi(limitStr); err == nil && limitStr != "" {
+			limit = int32(v)
 		}
 
-		if offsetStr != "" {
-			if v, err := strconv.Atoi(offsetStr); err == nil {
-				offset = int32(v)
-			}
-		}
-
-		products, err := q.ListProducts(r.Context(), sqlcdb.ListProductsParams{
-			Limit:  limit,
-			Offset: offset,
-		})
-		if err != nil {
-			utils.InternalError(w)
-			return
+		if v, err := strconv.Atoi(offsetStr); err == nil && offsetStr != "" {
+			offset = int32(v)
 		}
 
 		type ProductResponse struct {
-			ID          string                 `json:"id"`
-			Name        string                 `json:"name"`
-			Slug        string                 `json:"slug"`
-			Description string                 `json:"description"`
-			Images      []string               `json:"images"`
-			Variants    []sqlcdb.Variant       `json:"variants"`
+			ID          string           `json:"id"`
+			Name        string           `json:"name"`
+			Slug        string           `json:"slug"`
+			Category    string           `json:"category"`
+			Description string           `json:"description"`
+			Images      []string         `json:"images"`
+			Variants    []sqlcdb.Variant `json:"variants"`
 		}
 
 		var response []ProductResponse
 
-		for _, p := range products {
-			variants, _ := q.ListVariantsByProduct(r.Context(), p.ID)
+		// CATEGORY FILTERED
+		if category != "" {
+			products, err := q.ListProductsByCategory(
+				r.Context(),
+				sqlcdb.ListProductsByCategoryParams{
+					Category: category,
+					Limit:    limit,
+					Offset:   offset,
+				},
+			)
+			if err != nil {
+				utils.InternalError(w)
+				return
+			}
 
-			response = append(response, ProductResponse{
-				ID:          p.ID.String(),
-				Name:        p.Name,
-				Slug:        p.Slug,
-				Description: p.Description,
-				Images:      p.Images,
-				Variants:    variants,
-			})
+			for _, p := range products {
+				variants, _ := q.ListVariantsByProduct(r.Context(), p.ID)
+
+				response = append(response, ProductResponse{
+					ID:          p.ID.String(),
+					Name:        p.Name,
+					Slug:        p.Slug,
+					Category:    p.Category,
+					Description: p.Description,
+					Images:      p.Images,
+					Variants:    variants,
+				})
+			}
+
+		} else {
+			// ALL PRODUCTS
+			products, err := q.ListProducts(
+				r.Context(),
+				sqlcdb.ListProductsParams{
+					Limit:  limit,
+					Offset: offset,
+				},
+			)
+			if err != nil {
+				utils.InternalError(w)
+				return
+			}
+
+			for _, p := range products {
+				variants, _ := q.ListVariantsByProduct(r.Context(), p.ID)
+
+				response = append(response, ProductResponse{
+					ID:          p.ID.String(),
+					Name:        p.Name,
+					Slug:        p.Slug,
+					Category:    p.Category,
+					Description: p.Description,
+					Images:      p.Images,
+					Variants:    variants,
+				})
+			}
 		}
 
 		utils.OK(w, response)
@@ -74,13 +109,21 @@ func GetProduct(db *sql.DB) http.HandlerFunc {
 
 		q := sqlcdb.New(db)
 
+		category := chi.URLParam(r, "category")
 		slug := chi.URLParam(r, "slug")
-		if slug == "" {
+
+		if slug == "" || category == "" {
 			utils.NotFound(w)
 			return
 		}
 
-		product, err := q.GetProductBySlug(r.Context(), slug)
+		product, err := q.GetProductByCategoryAndSlug(
+			r.Context(),
+			sqlcdb.GetProductByCategoryAndSlugParams{
+				Category: category,
+				Slug:     slug,
+			},
+		)
 		if err != nil {
 			utils.NotFound(w)
 			return
@@ -92,6 +135,7 @@ func GetProduct(db *sql.DB) http.HandlerFunc {
 			ID          string           `json:"id"`
 			Name        string           `json:"name"`
 			Slug        string           `json:"slug"`
+			Category    string           `json:"category"`
 			Description string           `json:"description"`
 			Images      []string         `json:"images"`
 			Variants    []sqlcdb.Variant `json:"variants"`
@@ -101,6 +145,7 @@ func GetProduct(db *sql.DB) http.HandlerFunc {
 			ID:          product.ID.String(),
 			Name:        product.Name,
 			Slug:        product.Slug,
+			Category:    product.Category,
 			Description: product.Description,
 			Images:      product.Images,
 			Variants:    variants,

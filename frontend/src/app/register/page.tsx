@@ -10,38 +10,52 @@ export default function RegisterPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const redirect = searchParams.get("redirect") || "/products";
+  const redirect = searchParams.get("redirect") || "/";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+async function handleSubmit(e: React.FormEvent) {
+  e.preventDefault();
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  const trimmedEmail = email.trim();
+  const trimmedPassword = password.trim();
 
-    try {
-      await register(email, password);
-      router.push(redirect);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+  if (!trimmedEmail || !trimmedPassword) {
+    setError("Email and password are required.");
+    return;
   }
 
+  if (trimmedPassword.length < 6) {
+    setError("Password must be at least 6 characters.");
+    return;
+  }
+
+  setError(null);
+  setLoading(true);
+
+  try {
+    await register(trimmedEmail, trimmedPassword);
+    router.push(redirect);
+    router.refresh();   // ensures navbar/auth state updates
+  } catch {
+    setError("Failed to create account. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+}
+
   return (
-    <main className="min-h-screen flex items-center justify-center p-6">
+    <main className="min-h-screen flex items-center justify-center p-6 bg-neutral-50">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md bg-white p-6 rounded shadow flex flex-col gap-4"
+        className="w-full max-w-md bg-white p-8 rounded-lg border border-neutral-200 flex flex-col gap-5"
       >
-        <h1 className="text-2xl font-bold text-center text-red-800">Register</h1>
+        <h1 className="text-2xl font-semibold text-center">Create Account</h1>
 
         {error && (
-          <p className="text-red-500 text-sm text-center text-black">{error}</p>
+          <p className="text-red-600 text-sm text-center">{error}</p>
         )}
 
         <input
@@ -50,7 +64,7 @@ export default function RegisterPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="border p-2 rounded text-green-900"
+          className="border border-neutral-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
         />
 
         <input
@@ -59,22 +73,22 @@ export default function RegisterPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="border p-2 rounded text-green-900"
+          className="border border-neutral-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
         />
 
         <button
           type="submit"
-          disabled={loading}
-          className="bg-black text-red-100 py-2 rounded disabled:opacity-50"
+          disabled={loading || !email || !password}
+          className="bg-black text-white py-3 rounded-md disabled:opacity-50"
         >
           {loading ? "Creating account..." : "Register"}
         </button>
 
-        <p className="text-sm text-center text-black">
+        <p className="text-sm text-center text-neutral-600">
           Already have an account?{" "}
           <Link
             href={`/login?redirect=${redirect}`}
-            className="text-blue-600 underline"
+            className="text-black underline"
           >
             Login
           </Link>
