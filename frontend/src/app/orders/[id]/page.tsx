@@ -6,6 +6,7 @@ import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
+import { useToast } from "@/hooks/useToast";
 
 const STATUS_STYLES: Record<string, string> = {
   pending:   "bg-amber-50 text-amber-700",
@@ -23,6 +24,7 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { refreshCart } = useCart();
+  const toast = useToast();
 
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -62,7 +64,7 @@ export default function OrderDetailPage() {
       });
       rzp.open();
     } catch {
-      alert("Payment initiation failed. Please try again.");
+      toast("Payment initiation failed. Please try again.", "error");
       setPaying(false);
     }
   }

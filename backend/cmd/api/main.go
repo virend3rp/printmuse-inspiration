@@ -67,8 +67,6 @@ func main() {
 		bucket := os.Getenv("S3_BUCKET")
 		region := os.Getenv("AWS_REGION")
 
-		fmt.Println("BUCKET:", bucket)
-
 		s3Uploader, err := storage.NewS3Uploader(bucket, region)
 		if err != nil {
 			logger.Fatal("failed to initialize S3 uploader", zap.Error(err))
@@ -88,8 +86,12 @@ func main() {
 
 	r := chi.NewRouter()
 
+	allowedOrigin := os.Getenv("ALLOWED_ORIGIN")
+	if allowedOrigin == "" {
+		allowedOrigin = "http://localhost:3000"
+	}
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowedOrigins:   []string{allowedOrigin},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
 		AllowCredentials: true,
@@ -185,7 +187,6 @@ func main() {
 	}
 
 	go func() {
-		fmt.Println("BUCKET:", os.Getenv("S3_BUCKET"))
 		fmt.Printf("Server running on :%s\n", port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Fatal("server failed", zap.Error(err))

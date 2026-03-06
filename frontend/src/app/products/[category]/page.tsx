@@ -97,12 +97,16 @@ export default function CategoryPage() {
                 >
                   {/* Image */}
                   <div className="relative aspect-square rounded-2xl overflow-hidden bg-neutral-100">
-                    <Image
-                      src={product.images?.[0] || "/placeholder.jpg"}
-                      alt={product.name}
-                      fill
-                      className="object-cover transition duration-500 group-hover:scale-105"
-                    />
+                    {product.images?.[0] ? (
+                      <Image
+                        src={product.images[0]}
+                        alt={product.name}
+                        fill
+                        className="object-cover transition duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-neutral-200" />
+                    )}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition duration-300 flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100">
                       <span className="bg-white text-black text-xs font-semibold px-4 py-2 rounded-full shadow-md">
                         View Product →

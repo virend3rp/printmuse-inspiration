@@ -7,3 +7,5 @@ dist/
 .next/
 tmp/
 Docs/
+.DS_Store
+backend/bin/

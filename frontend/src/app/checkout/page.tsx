@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/useToast";
 
 type AddressForm = {
   name: string;
@@ -32,6 +34,8 @@ function isAddressComplete(a: AddressForm) {
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const toast = useToast();
 
   const [cart, setCart] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -40,10 +44,16 @@ export default function CheckoutPage() {
   const [step, setStep] = useState<"address" | "summary">("address");
 
   useEffect(() => {
-    apiFetch("/cart")
-      .then((res) => setCart(res.data))
-      .finally(() => setLoading(false));
-  }, []);
+    if (!authLoading && !user) {
+      router.push("/login?redirect=/checkout");
+      return;
+    }
+    if (!authLoading && user) {
+      apiFetch("/cart")
+        .then((res) => setCart(res.data))
+        .finally(() => setLoading(false));
+    }
+  }, [user, authLoading]);
 
   function updateAddress(field: keyof AddressForm, value: string) {
     setAddress((prev) => ({ ...prev, [field]: value }));
@@ -89,12 +99,12 @@ export default function CheckoutPage() {
       const rzp = new (window as any).Razorpay(options);
       rzp.open();
     } catch {
-      alert("Checkout failed. Please try again.");
+      toast("Checkout failed. Please try again.", "error");
       setProcessing(false);
     }
   }
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="container-system py-20 animate-pulse">
         <div className="max-w-2xl mx-auto space-y-4">
