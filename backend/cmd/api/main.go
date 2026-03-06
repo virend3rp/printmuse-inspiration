@@ -143,6 +143,7 @@ func main() {
 			protected.With(middleware.RateLimiter(5, 2)).
 				Post("/orders", orders.CreateOrder(pool))
 
+			protected.Get("/orders", orders.ListOrders(pool))
 			protected.Get("/orders/{id}", orders.GetOrder(pool))
 			protected.Post("/orders/{orderId}/pay", payments.CreatePayment(pool))
 		})

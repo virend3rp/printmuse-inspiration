@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Hero() {
   return (
@@ -17,21 +18,18 @@ export default function Hero() {
             with imagination and precision.
           </p>
 
-          <div className="flex gap-3">
-            <Link href="/products" className="btn-primary">
-              Explore
-            </Link>
-
-            <Link href="/products?category=custom" className="btn-outline">
-              Custom Lab
-            </Link>
-          </div>
+          <Link href="/products" className="btn-primary">
+            Explore
+          </Link>
         </div>
 
-        <div className="rounded-xl overflow-hidden">
-          <img
+        <div className="relative rounded-xl overflow-hidden h-[360px]">
+          <Image
             src="/hero.png"
-            className="w-full h-[360px] object-cover"
+            alt="Hero"
+            fill
+            className="object-cover"
+            priority
           />
         </div>
 

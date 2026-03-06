@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Container from "../ui/Container";
 import Section from "../ui/Section";
 
@@ -22,10 +23,9 @@ export default function Featured() {
               key={item.name}
               className="rounded-xl overflow-hidden border border-neutral-200"
             >
-              <img
-                src={item.img}
-                className="w-full h-[240px] object-cover"
-              />
+              <div className="relative h-[240px]">
+                <Image src={item.img} alt={item.name} fill className="object-cover" />
+              </div>
               <div className="p-4">
                 <h3 className="font-medium">{item.name}</h3>
                 <p className="text-neutral-500 text-sm">

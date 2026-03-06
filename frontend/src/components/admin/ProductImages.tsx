@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { uploadProductImage } from "@/services/uploadService"
 
 export default function ProductImages({
@@ -49,11 +50,9 @@ export default function ProductImages({
       {images.length > 0 && (
         <div className="flex gap-3 flex-wrap pt-2">
           {images.map((img) => (
-            <img
-              key={img}
-              src={img}
-              className="w-20 h-20 object-cover rounded border"
-            />
+            <div key={img} className="relative w-20 h-20 rounded border overflow-hidden">
+              <Image src={img} alt="" fill className="object-cover" />
+            </div>
           ))}
         </div>
       )}

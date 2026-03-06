@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import Container from "../ui/Container";
 import Section from "../ui/Section";
 
@@ -6,7 +7,6 @@ const categories = [
   { title: "Keychains", href: "/products?category=keychains", img: "/keychains.jpg" },
   { title: "Figurines", href: "/products?category=figurines", img: "/figurines.png" },
   { title: "Utility", href: "/products?category=utility", img: "/utility.png" },
-  { title: "Custom", href: "/products?category=custom", img: "/custom-print.png" },
 ];
 
 export default function Categories() {
@@ -23,11 +23,13 @@ export default function Categories() {
         <Link
           key={cat.title}
           href={cat.href}
-          className="relative overflow-hidden rounded-xl group"
+          className="relative overflow-hidden rounded-xl group h-[300px] block"
         >
-          <img
+          <Image
             src={cat.img}
-            className="w-full h-[300px] object-cover group-hover:scale-105 transition duration-500"
+            alt={cat.title}
+            fill
+            className="object-cover group-hover:scale-105 transition duration-500"
           />
           <div className="absolute inset-0 bg-black/30" />
           <div className="absolute bottom-4 left-4 text-white font-semibold text-lg">

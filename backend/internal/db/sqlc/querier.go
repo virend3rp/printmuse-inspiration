@@ -44,6 +44,7 @@ type Querier interface {
 	ListExpiredPendingOrders(ctx context.Context) ([]Order, error)
 	ListOrderItemsByOrderID(ctx context.Context, orderID uuid.UUID) ([]OrderItem, error)
 	ListOrdersAdmin(ctx context.Context, arg ListOrdersAdminParams) ([]Order, error)
+	ListOrdersByUserID(ctx context.Context, userID uuid.UUID) ([]ListOrdersByUserIDRow, error)
 	// =========================================
 	// PRODUCTS + VARIANTS (PUBLIC)
 	// =========================================

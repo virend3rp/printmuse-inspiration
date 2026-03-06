@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 
 interface ProductCardProps {
   id: string;
@@ -24,10 +25,12 @@ export default function ProductCard({
       <div className="relative overflow-hidden rounded-xl bg-white border border-neutral-200 transition duration-300 hover:-translate-y-1 hover:shadow-md">
 
         {/* Image */}
-        <div className="overflow-hidden">
-          <img
+        <div className="relative overflow-hidden h-[240px]">
+          <Image
             src={image}
-            className="w-full h-[240px] object-cover transition duration-500 group-hover:scale-105"
+            alt={name}
+            fill
+            className="object-cover transition duration-500 group-hover:scale-105"
           />
         </div>
 

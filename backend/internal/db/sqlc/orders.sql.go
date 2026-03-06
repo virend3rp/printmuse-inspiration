@@ -14,18 +14,19 @@ import (
 )
 
 const createOrder = `-- name: CreateOrder :one
-INSERT INTO orders (user_id, status, total, expires_at)
-VALUES ($1, 'pending', $2, NOW() + INTERVAL '15 minutes')
-RETURNING id, user_id, status, total, expires_at, created_at, updated_at
+INSERT INTO orders (user_id, status, total, expires_at, shipping_address)
+VALUES ($1, 'pending', $2, NOW() + INTERVAL '15 minutes', $3)
+RETURNING id, user_id, status, total, expires_at, created_at, updated_at, shipping_address
 `
 
 type CreateOrderParams struct {
-	UserID uuid.UUID `json:"user_id"`
-	Total  int32     `json:"total"`
+	UserID          uuid.UUID      `json:"user_id"`
+	Total           int32          `json:"total"`
+	ShippingAddress sql.NullString `json:"shipping_address"`
 }
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
-	row := q.db.QueryRowContext(ctx, createOrder, arg.UserID, arg.Total)
+	row := q.db.QueryRowContext(ctx, createOrder, arg.UserID, arg.Total, arg.ShippingAddress)
 	var i Order
 	err := row.Scan(
 		&i.ID,
@@ -35,6 +36,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ShippingAddress,
 	)
 	return i, err
 }
@@ -72,7 +74,7 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 }
 
 const getOrderByID = `-- name: GetOrderByID :one
-SELECT o.id, o.user_id, o.status, o.total, o.expires_at, o.created_at, o.updated_at, COALESCE(
+SELECT o.id, o.user_id, o.status, o.total, o.expires_at, o.created_at, o.updated_at, o.shipping_address, COALESCE(
     json_agg(oi ORDER BY oi.created_at)
     FILTER (WHERE oi.id IS NOT NULL),
     '[]'
@@ -84,14 +86,15 @@ GROUP BY o.id
 `
 
 type GetOrderByIDRow struct {
-	ID        uuid.UUID    `json:"id"`
-	UserID    uuid.UUID    `json:"user_id"`
-	Status    OrderStatus  `json:"status"`
-	Total     int32        `json:"total"`
-	ExpiresAt sql.NullTime `json:"expires_at"`
-	CreatedAt time.Time    `json:"created_at"`
-	UpdatedAt time.Time    `json:"updated_at"`
-	Items     interface{}  `json:"items"`
+	ID              uuid.UUID      `json:"id"`
+	UserID          uuid.UUID      `json:"user_id"`
+	Status          OrderStatus    `json:"status"`
+	Total           int32          `json:"total"`
+	ExpiresAt       sql.NullTime   `json:"expires_at"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+	ShippingAddress sql.NullString `json:"shipping_address"`
+	Items           interface{}    `json:"items"`
 }
 
 func (q *Queries) GetOrderByID(ctx context.Context, id uuid.UUID) (GetOrderByIDRow, error) {
@@ -105,13 +108,14 @@ func (q *Queries) GetOrderByID(ctx context.Context, id uuid.UUID) (GetOrderByIDR
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ShippingAddress,
 		&i.Items,
 	)
 	return i, err
 }
 
 const getPendingOrderByUserID = `-- name: GetPendingOrderByUserID :one
-SELECT id, user_id, status, total, expires_at, created_at, updated_at
+SELECT id, user_id, status, total, expires_at, created_at, updated_at, shipping_address
 FROM orders
 WHERE user_id = $1
 AND status = 'pending'
@@ -129,12 +133,13 @@ func (q *Queries) GetPendingOrderByUserID(ctx context.Context, userID uuid.UUID)
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ShippingAddress,
 	)
 	return i, err
 }
 
 const listExpiredPendingOrders = `-- name: ListExpiredPendingOrders :many
-SELECT id, user_id, status, total, expires_at, created_at, updated_at FROM orders
+SELECT id, user_id, status, total, expires_at, created_at, updated_at, shipping_address FROM orders
 WHERE status = 'pending'
 AND expires_at < NOW()
 `
@@ -156,6 +161,7 @@ func (q *Queries) ListExpiredPendingOrders(ctx context.Context) ([]Order, error)
 			&i.ExpiresAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ShippingAddress,
 		); err != nil {
 			return nil, err
 		}
@@ -207,7 +213,7 @@ func (q *Queries) ListOrderItemsByOrderID(ctx context.Context, orderID uuid.UUID
 }
 
 const listOrdersAdmin = `-- name: ListOrdersAdmin :many
-SELECT id, user_id, status, total, expires_at, created_at, updated_at FROM orders
+SELECT id, user_id, status, total, expires_at, created_at, updated_at, shipping_address FROM orders
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
 `
@@ -234,6 +240,57 @@ func (q *Queries) ListOrdersAdmin(ctx context.Context, arg ListOrdersAdminParams
 			&i.ExpiresAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ShippingAddress,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listOrdersByUserID = `-- name: ListOrdersByUserID :many
+SELECT id, user_id, status, total, shipping_address, expires_at, created_at, updated_at
+FROM orders
+WHERE user_id = $1
+ORDER BY created_at DESC
+`
+
+type ListOrdersByUserIDRow struct {
+	ID              uuid.UUID      `json:"id"`
+	UserID          uuid.UUID      `json:"user_id"`
+	Status          OrderStatus    `json:"status"`
+	Total           int32          `json:"total"`
+	ShippingAddress sql.NullString `json:"shipping_address"`
+	ExpiresAt       sql.NullTime   `json:"expires_at"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+}
+
+func (q *Queries) ListOrdersByUserID(ctx context.Context, userID uuid.UUID) ([]ListOrdersByUserIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, listOrdersByUserID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListOrdersByUserIDRow
+	for rows.Next() {
+		var i ListOrdersByUserIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Status,
+			&i.Total,
+			&i.ShippingAddress,
+			&i.ExpiresAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -254,9 +311,11 @@ SET status = $1,
     updated_at = NOW()
 WHERE id = $2
 AND (
-    (status = 'pending' AND $1 IN ('paid', 'expired'))
+    (status = 'pending'   AND $1 IN ('paid', 'expired', 'cancelled'))
+    OR (status = 'paid'   AND $1 IN ('shipped', 'cancelled'))
+    OR (status = 'shipped' AND $1 IN ('delivered', 'cancelled'))
 )
-RETURNING id, user_id, status, total, expires_at, created_at, updated_at
+RETURNING id, user_id, status, total, expires_at, created_at, updated_at, shipping_address
 `
 
 type UpdateOrderStatusParams struct {
@@ -275,6 +334,7 @@ func (q *Queries) UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusPa
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ShippingAddress,
 	)
 	return i, err
 }

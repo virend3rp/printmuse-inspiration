@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { deactivateProduct } from "@/lib/admin"
@@ -31,10 +32,9 @@ export default function ProductTable({ products }: any) {
         {products.map((p: any) => (
           <tr key={p.id} className="border-b hover:bg-neutral-50">
             <td className="py-3">
-              <img
-                src={p.images?.[0]}
-                className="w-12 h-12 object-cover rounded"
-              />
+              <div className="relative w-12 h-12 rounded overflow-hidden bg-neutral-100">
+                <Image src={p.images?.[0] || "/placeholder.jpg"} alt={p.name} fill className="object-cover" />
+              </div>
             </td>
 
             <td className="font-medium">{p.name}</td>

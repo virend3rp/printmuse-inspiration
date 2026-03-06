@@ -2,8 +2,10 @@ import "./globals.css";
 import { Space_Grotesk, Inter } from "next/font/google";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import CartDrawer from "@/components/CartDrawer";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
+import { ToastProvider } from "@/hooks/useToast";
 
 const space = Space_Grotesk({
   subsets: ["latin"],
@@ -26,12 +28,17 @@ export default function RootLayout({
       lang="en"
       className={`${space.variable} ${inter.variable}`}
     >
+      <head>
+        <script src="https://checkout.razorpay.com/v1/checkout.js" async />
+      </head>
       <body className="font-[var(--font-inter)]">
 
         <AuthProvider>
+          <ToastProvider>
           <CartProvider>
 
             <Navbar />
+            <CartDrawer />
 
             <main className="min-h-screen">
               {children}
@@ -40,6 +47,7 @@ export default function RootLayout({
             <Footer />
 
           </CartProvider>
+          </ToastProvider>
         </AuthProvider>
 
       </body>

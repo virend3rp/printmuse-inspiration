@@ -121,13 +121,14 @@ type CartItem struct {
 }
 
 type Order struct {
-	ID        uuid.UUID    `json:"id"`
-	UserID    uuid.UUID    `json:"user_id"`
-	Status    OrderStatus  `json:"status"`
-	Total     int32        `json:"total"`
-	ExpiresAt sql.NullTime `json:"expires_at"`
-	CreatedAt time.Time    `json:"created_at"`
-	UpdatedAt time.Time    `json:"updated_at"`
+	ID              uuid.UUID      `json:"id"`
+	UserID          uuid.UUID      `json:"user_id"`
+	Status          OrderStatus    `json:"status"`
+	Total           int32          `json:"total"`
+	ExpiresAt       sql.NullTime   `json:"expires_at"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+	ShippingAddress sql.NullString `json:"shipping_address"`
 }
 
 type OrderItem struct {
