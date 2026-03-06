@@ -11,21 +11,7 @@ export type AuthResponse = {
   };
 };
 
-export type Variant = {
-  id: string;
-  name: string;
-  price: number;
-  stock: number;
-};
-
-export interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  images: string[];
-  variants: Variant[];
-}
+export type { Product, Variant } from "./product";
 export type CartItem = {
   id: string;
   variant_id: string;

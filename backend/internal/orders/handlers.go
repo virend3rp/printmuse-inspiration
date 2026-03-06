@@ -14,13 +14,11 @@ import (
 func CreateOrder(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		userIDStr := utils.GetUserID(r)
-		if userIDStr == "" {
+		userID, ok := utils.ParseUserID(r)
+		if !ok {
 			utils.Unauthorized(w)
 			return
 		}
-
-		userID := uuid.MustParse(userIDStr)
 
 		// 🔒 Check existing pending order (outside transaction)
 		q := sqlcdb.New(db)
@@ -112,8 +110,8 @@ func GetOrder(db *sql.DB) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		userIDStr := utils.GetUserID(r)
-		if userIDStr == "" {
+		userID, ok := utils.ParseUserID(r)
+		if !ok {
 			utils.Unauthorized(w)
 			return
 		}
@@ -127,7 +125,7 @@ func GetOrder(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		if order.UserID.String() != userIDStr {
+		if order.UserID != userID {
 			utils.Forbidden(w)
 			return
 		}

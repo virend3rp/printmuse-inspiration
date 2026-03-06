@@ -10,6 +10,16 @@ import (
 	"github.com/virend3rp/ecommerce/backend/internal/utils"
 )
 
+type productResponse struct {
+	ID          string           `json:"id"`
+	Name        string           `json:"name"`
+	Slug        string           `json:"slug"`
+	Category    string           `json:"category"`
+	Description string           `json:"description"`
+	Images      []string         `json:"images"`
+	Variants    []sqlcdb.Variant `json:"variants"`
+}
+
 func ListProducts(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -30,17 +40,7 @@ func ListProducts(db *sql.DB) http.HandlerFunc {
 			offset = int32(v)
 		}
 
-		type ProductResponse struct {
-			ID          string           `json:"id"`
-			Name        string           `json:"name"`
-			Slug        string           `json:"slug"`
-			Category    string           `json:"category"`
-			Description string           `json:"description"`
-			Images      []string         `json:"images"`
-			Variants    []sqlcdb.Variant `json:"variants"`
-		}
-
-		var response []ProductResponse
+		var response []productResponse
 
 		// CATEGORY FILTERED
 		if category != "" {
@@ -60,7 +60,7 @@ func ListProducts(db *sql.DB) http.HandlerFunc {
 			for _, p := range products {
 				variants, _ := q.ListVariantsByProduct(r.Context(), p.ID)
 
-				response = append(response, ProductResponse{
+				response = append(response, productResponse{
 					ID:          p.ID.String(),
 					Name:        p.Name,
 					Slug:        p.Slug,
@@ -88,7 +88,7 @@ func ListProducts(db *sql.DB) http.HandlerFunc {
 			for _, p := range products {
 				variants, _ := q.ListVariantsByProduct(r.Context(), p.ID)
 
-				response = append(response, ProductResponse{
+				response = append(response, productResponse{
 					ID:          p.ID.String(),
 					Name:        p.Name,
 					Slug:        p.Slug,
@@ -131,17 +131,7 @@ func GetProduct(db *sql.DB) http.HandlerFunc {
 
 		variants, _ := q.ListVariantsByProduct(r.Context(), product.ID)
 
-		type ProductResponse struct {
-			ID          string           `json:"id"`
-			Name        string           `json:"name"`
-			Slug        string           `json:"slug"`
-			Category    string           `json:"category"`
-			Description string           `json:"description"`
-			Images      []string         `json:"images"`
-			Variants    []sqlcdb.Variant `json:"variants"`
-		}
-
-		response := ProductResponse{
+		response := productResponse{
 			ID:          product.ID.String(),
 			Name:        product.Name,
 			Slug:        product.Slug,

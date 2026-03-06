@@ -35,23 +35,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
+  function saveSession(res: AuthResponse) {
+    setUser(res.data.user);
+    sessionStorage.setItem("access_token", res.data.access_token);
+    sessionStorage.setItem("user", JSON.stringify(res.data.user));
+  }
+
   async function login(email: string, password: string) {
     const res: AuthResponse = await apiFetch("/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
-
-    setUser(res.data.user);
-
-    sessionStorage.setItem(
-      "access_token",
-      res.data.access_token
-    );
-
-    sessionStorage.setItem(
-      "user",
-      JSON.stringify(res.data.user)
-    );
+    saveSession(res);
   }
 
   async function register(email: string, password: string) {
@@ -59,18 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
-
-    setUser(res.data.user);
-
-    sessionStorage.setItem(
-      "access_token",
-      res.data.access_token
-    );
-
-    sessionStorage.setItem(
-      "user",
-      JSON.stringify(res.data.user)
-    );
+    saveSession(res);
   }
 
   function logout() {

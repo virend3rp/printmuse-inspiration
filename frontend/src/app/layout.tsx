@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Space_Grotesk, Inter } from "next/font/google";
 import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
 
@@ -26,11 +27,21 @@ export default function RootLayout({
       className={`${space.variable} ${inter.variable}`}
     >
       <body className="font-[var(--font-inter)]">
+
         <AuthProvider>
           <CartProvider>
-            {children}
+
+            <Navbar />
+
+            <main className="min-h-screen">
+              {children}
+            </main>
+
+            <Footer />
+
           </CartProvider>
         </AuthProvider>
+
       </body>
     </html>
   );

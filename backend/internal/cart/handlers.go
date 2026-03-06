@@ -21,8 +21,8 @@ func AddItem(db *sql.DB) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		userIDStr := utils.GetUserID(r)
-		if userIDStr == "" {
+		userID, ok := utils.ParseUserID(r)
+		if !ok {
 			utils.Unauthorized(w)
 			return
 		}
@@ -38,7 +38,6 @@ func AddItem(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		userID := uuid.MustParse(userIDStr)
 		variantID := uuid.MustParse(req.VariantID)
 
 		cart, err := q.GetOrCreateCart(r.Context(), userID)
@@ -66,13 +65,11 @@ func GetCart(db *sql.DB) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		userIDStr := utils.GetUserID(r)
-		if userIDStr == "" {
+		userID, ok := utils.ParseUserID(r)
+		if !ok {
 			utils.Unauthorized(w)
 			return
 		}
-
-		userID := uuid.MustParse(userIDStr)
 
 		cart, err := q.GetOrCreateCart(r.Context(), userID)
 		if err != nil {
@@ -105,8 +102,8 @@ func RemoveItem(db *sql.DB) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		userIDStr := utils.GetUserID(r)
-		if userIDStr == "" {
+		userID, ok := utils.ParseUserID(r)
+		if !ok {
 			utils.Unauthorized(w)
 			return
 		}
@@ -117,7 +114,6 @@ func RemoveItem(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		userID := uuid.MustParse(userIDStr)
 		itemID := uuid.MustParse(itemIDStr)
 
 		cart, err := q.GetOrCreateCart(r.Context(), userID)

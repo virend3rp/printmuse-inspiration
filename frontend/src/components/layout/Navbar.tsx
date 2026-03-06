@@ -54,13 +54,6 @@ export default function Navbar() {
               Utility
             </Link>
 
-            <Link
-              href="/products/custom"
-              className={linkClass("/products/custom")}
-            >
-              Custom Lab
-            </Link>
-
             {user?.role === "admin" && (
               <Link
                 href="/admin"

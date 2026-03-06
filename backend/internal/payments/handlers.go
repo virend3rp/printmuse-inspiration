@@ -22,8 +22,8 @@ type razorpayOrderResponse struct {
 func CreatePayment(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		userIDStr := utils.GetUserID(r)
-		if userIDStr == "" {
+		userID, ok := utils.ParseUserID(r)
+		if !ok {
 			utils.Unauthorized(w)
 			return
 		}
@@ -39,7 +39,7 @@ func CreatePayment(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		if order.UserID.String() != userIDStr {
+		if order.UserID != userID {
 			utils.Forbidden(w)
 			return
 		}

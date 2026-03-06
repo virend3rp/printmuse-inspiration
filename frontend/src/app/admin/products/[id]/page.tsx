@@ -15,7 +15,6 @@ export default function EditProductPage() {
   useEffect(() => {
     async function load() {
       const res = await fetchProduct(id as string)
-
       const data = res.data
 
       setProduct({

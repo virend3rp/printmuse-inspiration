@@ -23,13 +23,8 @@ export default function ProductDetailPage() {
     async function fetchProduct() {
       try {
         const res = await apiFetch(
-          `/products/${slug}`
+          `/products/${category}/${slug}`
         );
-
-        if (res.data.category !== category) {
-          router.push(`/products/${res.data.category}/${slug}`);
-          return;
-        }
 
         setProduct(res.data);
 
@@ -47,7 +42,7 @@ export default function ProductDetailPage() {
     }
 
     fetchProduct();
-  }, [slug]);
+  }, [slug, category]);
 
   async function handleAddToCart() {
     if (!user) {

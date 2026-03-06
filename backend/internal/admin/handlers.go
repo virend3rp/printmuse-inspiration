@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 	"strconv"
-
+    "fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
@@ -20,7 +20,6 @@ type createProductRequest struct {
 }
 
 type updateProductRequest struct {
-	ID          string   `json:"id"`
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
 	Category    string   `json:"category"`
@@ -64,7 +63,11 @@ func CreateProduct(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		// generate slug
 		slug := utils.Slugify(req.Name)
+
+		// ensure uniqueness
+		slug = fmt.Sprintf("%s-%s", slug, uuid.New().String()[:6])
 
 		product, err := q.CreateProduct(r.Context(), sqlcdb.CreateProductParams{
 			Name:        req.Name,
@@ -74,6 +77,7 @@ func CreateProduct(db *sql.DB) http.HandlerFunc {
 			Images:      req.Images,
 		})
 		if err != nil {
+			fmt.Println("CreateProduct error:", err)
 			utils.InternalError(w)
 			return
 		}
@@ -81,7 +85,6 @@ func CreateProduct(db *sql.DB) http.HandlerFunc {
 		utils.Created(w, product)
 	}
 }
-
 func GetProductByID(db *sql.DB) http.HandlerFunc {
 	q := sqlcdb.New(db)
 
@@ -110,15 +113,17 @@ func UpdateProduct(db *sql.DB) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		var req updateProductRequest
-		if err := utils.DecodeJSON(r, &req); err != nil {
-			utils.BadRequest(w, err.Error())
+		idStr := chi.URLParam(r, "id")
+
+		productID, err := uuid.Parse(idStr)
+		if err != nil {
+			utils.BadRequest(w, "invalid product id")
 			return
 		}
 
-		productID, err := uuid.Parse(req.ID)
-		if err != nil {
-			utils.BadRequest(w, "invalid product id")
+		var req updateProductRequest
+		if err := utils.DecodeJSON(r, &req); err != nil {
+			utils.BadRequest(w, err.Error())
 			return
 		}
 

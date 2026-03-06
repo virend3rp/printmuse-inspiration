@@ -1,3 +1,5 @@
+export const PRODUCT_CATEGORIES = ["keychains", "figurines", "utility", "custom"] as const
+
 export type Variant = {
   id?: string
   name: string

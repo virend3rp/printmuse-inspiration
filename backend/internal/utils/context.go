@@ -3,6 +3,8 @@ package utils
 import (
 	"context"
 	"net/http"
+
+	"github.com/google/uuid"
 )
 
 type contextKey string
@@ -26,4 +28,12 @@ func GetUserID(r *http.Request) string {
 func GetUserRole(r *http.Request) string {
 	role, _ := r.Context().Value(ContextKeyRole).(string)
 	return role
+}
+
+func ParseUserID(r *http.Request) (uuid.UUID, bool) {
+	s := GetUserID(r)
+	if s == "" {
+		return uuid.UUID{}, false
+	}
+	return uuid.MustParse(s), true
 }

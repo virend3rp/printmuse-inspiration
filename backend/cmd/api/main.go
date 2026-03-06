@@ -126,7 +126,7 @@ func main() {
 		})
 
 		api.Get("/products", catalog.ListProducts(pool))
-		api.Get("/products/{slug}", catalog.GetProduct(pool))
+		api.Get("/products/{category}/{slug}", catalog.GetProduct(pool))
 
 		api.Post("/webhooks/razorpay", payments.HandleWebhook(pool))
 
@@ -156,10 +156,10 @@ func main() {
 
 			// PRODUCTS
 			adminR.Post("/products", admin.CreateProduct(pool))
-			adminR.Put("/products", admin.UpdateProduct(pool))
+			adminR.Put("/products/{id}", admin.UpdateProduct(pool))
 			adminR.Get("/products", admin.ListProducts(pool))
-			adminR.Get("/products/{id}", admin.GetProductByID(pool)) // add this
-			adminR.Put("/products/{id}/deactivate", admin.DeactivateProduct(pool))
+			adminR.Get("/products/{id}", admin.GetProductByID(pool))
+			adminR.Delete("/products/{id}", admin.DeactivateProduct(pool))
 			
 			// VARIANTS
 			adminR.Post("/variants", admin.CreateVariant(pool))

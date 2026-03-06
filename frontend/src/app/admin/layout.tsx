@@ -56,7 +56,6 @@ function linkClass(href: string) {
 
   return (
     <>
-      <Navbar />
 
       <div className="min-h-screen bg-neutral-50 flex">
         {/* Sidebar */}

@@ -7,25 +7,30 @@ import { apiFetch } from "@/lib/api";
 
 export default function CategoryPage() {
   const { category } = useParams();
+  const normalizedCategory = (category as string)?.toLowerCase();
+
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!category) return;
+    if (!normalizedCategory) return;
 
     async function fetchProducts() {
       try {
         const res = await apiFetch(
-          `/products?category=${category}`
+          `/products?category=${normalizedCategory}`
         );
-        setProducts(res.data || []);
+
+        const data = Array.isArray(res) ? res : res.data || [];
+
+        setProducts(data);
       } finally {
         setLoading(false);
       }
     }
 
     fetchProducts();
-  }, [category]);
+  }, [normalizedCategory]);
 
   if (loading) {
     return (
@@ -37,9 +42,8 @@ export default function CategoryPage() {
 
   return (
     <div className="section py-20">
-
       <h1 className="heading-lg mb-12 capitalize">
-        {category}
+        {normalizedCategory}
       </h1>
 
       {products.length === 0 && (
@@ -50,7 +54,7 @@ export default function CategoryPage() {
         {products.map((product) => (
           <Link
             key={product.id}
-            href={`/products/${category}/${product.slug}`}
+            href={`/products/${normalizedCategory}/${product.slug}`}
             className="card overflow-hidden group"
           >
             <img
@@ -72,7 +76,6 @@ export default function CategoryPage() {
           </Link>
         ))}
       </div>
-
     </div>
   );
 }
