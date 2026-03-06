@@ -9,3 +9,5 @@ tmp/
 Docs/
 .DS_Store
 backend/bin/
+*.pem
+DEPLOYMENT.md
