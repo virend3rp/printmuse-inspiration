@@ -6,24 +6,24 @@ import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 
-const STATUS_STYLES: Record<string, string> = {
-  pending:   "bg-amber-50 text-amber-700",
-  paid:      "bg-blue-50 text-blue-700",
-  shipped:   "bg-indigo-50 text-indigo-700",
-  delivered: "bg-green-50 text-green-700",
-  cancelled: "bg-red-50 text-red-600",
-  expired:   "bg-neutral-100 text-neutral-500",
+const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
+  pending:   { bg: "rgba(245,166,35,0.15)",  color: "#f5a623" },
+  paid:      { bg: "rgba(96,165,250,0.15)",  color: "#60a5fa" },
+  shipped:   { bg: "rgba(129,140,248,0.15)", color: "#818cf8" },
+  delivered: { bg: "rgba(74,222,128,0.15)",  color: "#4ade80" },
+  cancelled: { bg: "rgba(248,113,113,0.15)", color: "#f87171" },
+  expired:   { bg: "rgba(100,90,80,0.2)",    color: "#8f8070" },
 };
 
 function OrderSkeleton() {
   return (
-    <div className="animate-pulse border border-neutral-200 rounded-2xl p-5 space-y-3">
+    <div className="animate-pulse rounded-2xl p-5 space-y-3" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
       <div className="flex justify-between">
-        <div className="h-4 bg-neutral-200 rounded w-40" />
-        <div className="h-5 bg-neutral-200 rounded w-20" />
+        <div className="h-4 rounded w-40" style={{ background: "var(--color-surface-2)" }} />
+        <div className="h-5 rounded w-20" style={{ background: "var(--color-surface-2)" }} />
       </div>
-      <div className="h-3 bg-neutral-200 rounded w-24" />
-      <div className="h-4 bg-neutral-200 rounded w-16" />
+      <div className="h-3 rounded w-24" style={{ background: "var(--color-surface-2)" }} />
+      <div className="h-4 rounded w-16" style={{ background: "var(--color-surface-2)" }} />
     </div>
   );
 }
@@ -68,41 +68,44 @@ export default function OrdersPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {orders.map((order) => (
+          {orders.map((order) => {
+            const badge = STATUS_STYLES[order.status] ?? { bg: "rgba(100,90,80,0.2)", color: "#8f8070" };
+            return (
             <Link
               key={order.id}
               href={`/orders/${order.id}`}
-              className="block border border-neutral-200 rounded-2xl p-5 hover:border-neutral-400 transition group"
+              className="block rounded-2xl p-5 transition"
+              style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}
             >
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm text-neutral-500 font-mono">
+                <p className="text-sm font-mono" style={{ color: "var(--color-text-secondary)" }}>
                   #{order.id.slice(0, 8).toUpperCase()}
                 </p>
                 <span
-                  className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${
-                    STATUS_STYLES[order.status] ?? "bg-neutral-100 text-neutral-600"
-                  }`}
+                  className="text-xs font-semibold px-2.5 py-1 rounded-full capitalize"
+                  style={{ background: badge.bg, color: badge.color }}
                 >
                   {order.status}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <p className="text-sm text-neutral-500">
+                <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
                   {new Date(order.created_at).toLocaleDateString("en-IN", {
                     day: "numeric",
                     month: "short",
                     year: "numeric",
                   })}
                 </p>
-                <p className="font-semibold">₹{order.total}</p>
+                <p className="font-semibold" style={{ color: "var(--color-text-primary)" }}>₹{order.total}</p>
               </div>
               {order.shipping_address && (
-                <p className="text-xs text-neutral-400 mt-1 truncate">
+                <p className="text-xs mt-1 truncate" style={{ color: "var(--color-text-muted)" }}>
                   {order.shipping_address}
                 </p>
               )}
             </Link>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
