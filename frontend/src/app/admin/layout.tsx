@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import Navbar from "@/components/layout/Navbar";
 
 export default function AdminLayout({
   children,

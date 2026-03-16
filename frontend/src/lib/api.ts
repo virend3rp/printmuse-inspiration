@@ -27,7 +27,7 @@ export async function apiFetch(
   path: string,
   options: RequestInit = {}
 ) {
-  let token =
+  const token =
     typeof window !== "undefined"
       ? sessionStorage.getItem("access_token")
       : null;

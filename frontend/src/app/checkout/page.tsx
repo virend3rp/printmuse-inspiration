@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
@@ -123,9 +124,9 @@ export default function CheckoutPage() {
     return (
       <div className="container-system py-20 text-center">
         <p className="text-xl font-semibold mb-2" style={{ color: "var(--color-text-primary)" }}>Your cart is empty</p>
-        <a href="/products/keychains" className="text-sm hover:text-[var(--color-accent)] transition-colors" style={{ color: "var(--color-text-secondary)" }}>
+        <Link href="/products/keychains" className="text-sm hover:text-[var(--color-accent)] transition-colors" style={{ color: "var(--color-text-secondary)" }}>
           Continue shopping →
-        </a>
+        </Link>
       </div>
     );
   }
