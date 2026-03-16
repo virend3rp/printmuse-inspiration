@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD
 
 on:
   push:
@@ -61,21 +61,32 @@ jobs:
           NEXT_PUBLIC_RAZORPAY_KEY_ID: dummy
           NEXT_PUBLIC_S3_BASE_URL: https://example.s3.amazonaws.com
 
-  docker:
-    name: Docker builds
+  deploy:
+    name: Deploy to EC2
     runs-on: ubuntu-latest
     needs: [backend, frontend]
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/app
+            git pull
 
-      - name: Build backend image
-        run: docker build ./backend --tag printmuse-backend:ci
+            # Backend
+            cd backend
+            go build -o bin/api ./cmd/api
+            sudo systemctl restart forgecraft-backend
 
-      - name: Build frontend image
-        run: |
-          docker build ./frontend \
-            --tag printmuse-frontend:ci \
-            --build-arg NEXT_PUBLIC_API_URL=http://localhost:8080/api/ \
-            --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID=dummy \
-            --build-arg NEXT_PUBLIC_S3_BASE_URL=https://example.s3.amazonaws.com
+            # Frontend
+            cd ../frontend
+            npm ci --prefer-offline
+            npm run build
+            cp -r .next/static .next/standalone/.next/static
+            cp -r public .next/standalone/public
+            sudo systemctl restart forgecraft-frontend
