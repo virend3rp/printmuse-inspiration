@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import "./globals.css";
 import { Space_Grotesk, Inter } from "next/font/google";
 import Navbar from "@/components/layout/Navbar";
@@ -6,6 +7,14 @@ import CartDrawer from "@/components/CartDrawer";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
 import { ToastProvider } from "@/hooks/useToast";
+
+export const metadata: Metadata = {
+  title: "Forgecraft — Custom 3D Printed Creations",
+  description: "Precision-crafted keychains, figurines, and utility objects made to order. Forged. Not Printed.",
+  icons: {
+    icon: "/favicon.svg",
+  },
+};
 
 const space = Space_Grotesk({
   subsets: ["latin"],
