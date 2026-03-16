@@ -50,7 +50,7 @@ function linkClass(href: string) {
   return `px-3 py-2 rounded-md text-sm transition ${
     active
       ? "bg-[var(--color-accent)] text-[#111] font-semibold"
-      : "text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] hover:bg-[var(--color-surface-2)]"
+      : "text-[#c0b090] hover:text-[var(--color-accent)] hover:bg-[var(--color-surface-2)]"
   }`;
 }
 

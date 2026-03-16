@@ -66,18 +66,18 @@ export default function AdminDashboard() {
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-pulse">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-24 bg-neutral-100 rounded-xl" />
+            <div key={i} className="h-24 rounded-xl" style={{ background: "var(--color-surface-2)" }} />
           ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {stats.map((stat) => {
             const card = (
-              <div className="rounded-xl border border-neutral-200 bg-white p-5 hover:shadow-sm transition">
-                <p className="text-xs text-neutral-500 mb-1">{stat.label}</p>
-                <p className="text-2xl font-bold">{stat.value}</p>
+              <div className="rounded-xl p-5 transition" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+                <p className="text-xs mb-1" style={{ color: "var(--color-text-secondary)" }}>{stat.label}</p>
+                <p className="text-2xl font-bold" style={{ color: "var(--color-accent)" }}>{stat.value}</p>
                 {stat.sub && (
-                  <p className="text-xs text-neutral-400 mt-1">{stat.sub}</p>
+                  <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>{stat.sub}</p>
                 )}
               </div>
             );

@@ -36,15 +36,19 @@ export default function AdminAnalyticsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Revenue</h1>
+      <h1 className="text-2xl font-bold mb-6" style={{ color: "var(--color-text-primary)" }}>Revenue</h1>
 
-      <LineChart width={700} height={400} data={data}>
-        <CartesianGrid stroke="#ccc" />
-        <XAxis dataKey="date" />
-        <YAxis />
-        <Tooltip />
-        <Line type="monotone" dataKey="revenue" stroke="#000" />
-      </LineChart>
+      {data.length === 0 ? (
+        <p style={{ color: "var(--color-text-secondary)" }}>No paid orders yet — chart will appear once orders come in.</p>
+      ) : (
+        <LineChart width={700} height={400} data={data} style={{ background: "var(--color-surface)", borderRadius: 12, padding: 16 }}>
+          <CartesianGrid stroke="#2e2820" />
+          <XAxis dataKey="date" stroke="#8f8070" tick={{ fill: "#8f8070", fontSize: 12 }} />
+          <YAxis stroke="#8f8070" tick={{ fill: "#8f8070", fontSize: 12 }} />
+          <Tooltip contentStyle={{ background: "var(--color-surface-2)", border: "1px solid var(--color-border)", color: "var(--color-text-primary)" }} />
+          <Line type="monotone" dataKey="revenue" stroke="#f5a623" strokeWidth={2} dot={{ fill: "#f5a623" }} />
+        </LineChart>
+      )}
     </div>
   );
 }
