@@ -2,9 +2,12 @@ package admin
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
-    "fmt"
+	"time"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
@@ -273,6 +276,61 @@ func UpdateVariant(db *sql.DB) http.HandlerFunc {
 		}
 
 		utils.OK(w, variant)
+	}
+}
+
+func GetOrder(db *sql.DB) http.HandlerFunc {
+	q := sqlcdb.New(db)
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		orderID, err := uuid.Parse(chi.URLParam(r, "id"))
+		if err != nil {
+			utils.NotFound(w)
+			return
+		}
+
+		order, err := q.GetOrderByID(r.Context(), orderID)
+		if err != nil {
+			utils.NotFound(w)
+			return
+		}
+
+		type orderResponse struct {
+			ID              uuid.UUID          `json:"id"`
+			UserID          uuid.UUID          `json:"user_id"`
+			Status          sqlcdb.OrderStatus `json:"status"`
+			Total           int32              `json:"total"`
+			ShippingAddress *string            `json:"shipping_address"`
+			CreatedAt       time.Time          `json:"created_at"`
+			UpdatedAt       time.Time          `json:"updated_at"`
+			Items           json.RawMessage    `json:"items"`
+		}
+
+		var rawItems json.RawMessage
+		switch v := order.Items.(type) {
+		case []byte:
+			rawItems = json.RawMessage(v)
+		case string:
+			rawItems = json.RawMessage(v)
+		default:
+			rawItems = json.RawMessage("[]")
+		}
+
+		var shippingAddr *string
+		if order.ShippingAddress.Valid {
+			shippingAddr = &order.ShippingAddress.String
+		}
+
+		utils.OK(w, orderResponse{
+			ID:              order.ID,
+			UserID:          order.UserID,
+			Status:          order.Status,
+			Total:           order.Total,
+			ShippingAddress: shippingAddr,
+			CreatedAt:       order.CreatedAt,
+			UpdatedAt:       order.UpdatedAt,
+			Items:           rawItems,
+		})
 	}
 }
 

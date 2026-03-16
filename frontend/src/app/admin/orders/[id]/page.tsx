@@ -6,16 +6,23 @@ import { apiFetch } from "@/lib/api";
 import { useToast } from "@/hooks/useToast";
 import Link from "next/link";
 
-const STATUSES = ["pending", "confirmed", "paid", "shipped", "delivered", "cancelled"];
+const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
+  pending:   { bg: "rgba(245,166,35,0.15)",  color: "#f5a623" },
+  paid:      { bg: "rgba(96,165,250,0.15)",  color: "#60a5fa" },
+  shipped:   { bg: "rgba(129,140,248,0.15)", color: "#818cf8" },
+  delivered: { bg: "rgba(74,222,128,0.15)",  color: "#4ade80" },
+  cancelled: { bg: "rgba(248,113,113,0.15)", color: "#f87171" },
+  expired:   { bg: "rgba(100,90,80,0.2)",    color: "#8f8070" },
+  confirmed: { bg: "rgba(167,139,250,0.15)", color: "#a78bfa" },
+};
 
-const STATUS_STYLES: Record<string, string> = {
-  pending:   "bg-yellow-50 text-yellow-700",
-  paid:      "bg-green-50 text-green-700",
-  shipped:   "bg-blue-50 text-blue-700",
-  delivered: "bg-emerald-50 text-emerald-700",
-  cancelled: "bg-red-50 text-red-600",
-  expired:   "bg-neutral-100 text-neutral-500",
-  confirmed: "bg-purple-50 text-purple-700",
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  pending:   ["cancelled"],
+  paid:      ["shipped", "cancelled"],
+  shipped:   ["delivered", "cancelled"],
+  delivered: [],
+  cancelled: [],
+  expired:   [],
 };
 
 export default function AdminOrderDetailPage() {
@@ -55,9 +62,9 @@ export default function AdminOrderDetailPage() {
   if (loading) {
     return (
       <div className="animate-pulse space-y-4 max-w-2xl">
-        <div className="h-8 bg-neutral-100 rounded w-1/3" />
-        <div className="h-40 bg-neutral-100 rounded-xl" />
-        <div className="h-32 bg-neutral-100 rounded-xl" />
+        <div className="h-8 rounded w-1/3" style={{ background: "var(--color-surface-2)" }} />
+        <div className="h-40 rounded-xl" style={{ background: "var(--color-surface-2)" }} />
+        <div className="h-32 rounded-xl" style={{ background: "var(--color-surface-2)" }} />
       </div>
     );
   }
@@ -65,15 +72,16 @@ export default function AdminOrderDetailPage() {
   if (!order) {
     return (
       <div>
-        <p className="text-neutral-500">Order not found.</p>
-        <Link href="/admin/orders" className="text-sm hover:underline mt-2 block">
+        <p style={{ color: "var(--color-text-secondary)" }}>Order not found.</p>
+        <Link href="/admin/orders" className="text-sm hover:underline mt-2 block" style={{ color: "var(--color-accent)" }}>
           ← Back to orders
         </Link>
       </div>
     );
   }
 
-  const badgeCls = STATUS_STYLES[order.status] ?? "bg-neutral-100 text-neutral-500";
+  const badge = STATUS_STYLES[order.status] ?? { bg: "rgba(100,90,80,0.2)", color: "#8f8070" };
+  const nextStatuses = VALID_TRANSITIONS[order.status] ?? [];
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -82,27 +90,31 @@ export default function AdminOrderDetailPage() {
         <div>
           <Link
             href="/admin/orders"
-            className="text-xs text-neutral-400 hover:text-black transition mb-1 block"
+            className="text-xs transition mb-1 block hover:underline"
+            style={{ color: "var(--color-text-muted)" }}
           >
             ← Orders
           </Link>
-          <h1 className="text-2xl font-bold">Order Detail</h1>
-          <p className="text-xs font-mono text-neutral-400 mt-0.5">{order.id}</p>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--color-text-primary)" }}>Order Detail</h1>
+          <p className="text-xs font-mono mt-0.5" style={{ color: "var(--color-text-muted)" }}>{order.id}</p>
         </div>
-        <span className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${badgeCls}`}>
+        <span
+          className="px-3 py-1 rounded-full text-xs font-semibold capitalize"
+          style={{ background: badge.bg, color: badge.color }}
+        >
           {order.status}
         </span>
       </div>
 
-      {/* Summary card */}
-      <div className="rounded-xl border border-neutral-200 bg-white p-5 space-y-3">
+      {/* Summary */}
+      <div className="rounded-xl p-5 space-y-3" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
         <div className="flex justify-between text-sm">
-          <span className="text-neutral-500">Total</span>
-          <span className="font-semibold">₹{order.total}</span>
+          <span style={{ color: "var(--color-text-secondary)" }}>Total</span>
+          <span className="font-semibold" style={{ color: "var(--color-accent)" }}>₹{order.total}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-neutral-500">Placed on</span>
-          <span>
+          <span style={{ color: "var(--color-text-secondary)" }}>Placed on</span>
+          <span style={{ color: "var(--color-text-primary)" }}>
             {new Date(order.created_at).toLocaleDateString("en-IN", {
               day: "numeric",
               month: "long",
@@ -111,54 +123,65 @@ export default function AdminOrderDetailPage() {
           </span>
         </div>
         {order.shipping_address && (
-          <div className="flex justify-between text-sm">
-            <span className="text-neutral-500">Ship to</span>
-            <span className="text-right max-w-xs">{order.shipping_address}</span>
+          <div className="flex justify-between text-sm gap-4">
+            <span style={{ color: "var(--color-text-secondary)" }}>Ship to</span>
+            <span className="text-right" style={{ color: "var(--color-text-primary)" }}>{order.shipping_address}</span>
           </div>
         )}
       </div>
 
       {/* Items */}
-      <div className="rounded-xl border border-neutral-200 bg-white overflow-hidden">
-        <div className="px-5 py-3 border-b border-neutral-100 text-sm font-medium">
+      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--color-border)" }}>
+        <div className="px-5 py-3 text-sm font-medium" style={{ background: "var(--color-surface-2)", color: "var(--color-text-primary)", borderBottom: "1px solid var(--color-border)" }}>
           Items
         </div>
-        <div className="divide-y divide-neutral-100">
-          {order.items?.map((item: any) => (
-            <div key={item.id} className="flex justify-between px-5 py-3 text-sm">
+        <div>
+          {order.items?.map((item: any, i: number) => (
+            <div
+              key={item.id}
+              className="flex justify-between px-5 py-3 text-sm"
+              style={{ background: "var(--color-surface)", borderTop: i > 0 ? "1px solid var(--color-border)" : undefined }}
+            >
               <div>
-                <p className="font-medium">{item.name}</p>
-                <p className="text-neutral-400 text-xs">Qty: {item.qty}</p>
+                <p className="font-medium" style={{ color: "var(--color-text-primary)" }}>{item.name ?? "Item"}</p>
+                <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>Qty: {item.qty}</p>
               </div>
-              <p className="font-medium">₹{item.price * item.qty}</p>
+              <p className="font-medium" style={{ color: "var(--color-accent)" }}>₹{item.price * item.qty}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Status update */}
-      <div className="rounded-xl border border-neutral-200 bg-white p-5">
-        <p className="text-sm font-medium mb-3">Update Status</p>
-        <div className="flex gap-3">
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="flex-1 border border-neutral-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-          >
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s.charAt(0).toUpperCase() + s.slice(1)}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={handleStatusUpdate}
-            disabled={updating || selectedStatus === order.status}
-            className="px-4 py-2 bg-black text-white text-sm rounded-lg font-medium hover:opacity-80 transition disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {updating ? "Saving…" : "Save"}
-          </button>
-        </div>
+      <div className="rounded-xl p-5" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+        <p className="text-sm font-medium mb-3" style={{ color: "var(--color-text-primary)" }}>Update Status</p>
+        {nextStatuses.length === 0 ? (
+          <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>No further status transitions available.</p>
+        ) : (
+          <div className="flex gap-3">
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none"
+              style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-border)", color: "var(--color-text-primary)" }}
+            >
+              <option value={order.status}>{order.status.charAt(0).toUpperCase() + order.status.slice(1)} (current)</option>
+              {nextStatuses.map((s) => (
+                <option key={s} value={s}>
+                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleStatusUpdate}
+              disabled={updating || selectedStatus === order.status}
+              className="px-4 py-2 text-sm rounded-lg font-medium transition disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: "var(--color-accent)", color: "#111" }}
+            >
+              {updating ? "Saving…" : "Save"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

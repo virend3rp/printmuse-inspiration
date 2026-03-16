@@ -200,6 +200,7 @@ func main() {
 
 			// ORDERS
 			adminR.Get("/orders", admin.ListOrders(pool))
+			adminR.Get("/orders/{id}", admin.GetOrder(pool))
 			adminR.Put("/orders/status", admin.UpdateOrderStatus(pool))
 
 			// IMAGE UPLOAD

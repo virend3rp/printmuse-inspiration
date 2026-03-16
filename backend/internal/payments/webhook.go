@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"os"
 
@@ -50,8 +51,8 @@ func HandleWebhook(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// We only care about successful captures
-		if payload.Event != "payment.captured" {
+		// We only care about successful captures (test mode sends authorized, live sends captured)
+		if payload.Event != "payment.captured" && payload.Event != "payment.authorized" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
@@ -72,7 +73,7 @@ func HandleWebhook(db *sql.DB) http.HandlerFunc {
 		}
 
 		// 🔒 Idempotency guard — if already paid, ignore duplicate webhook
-		if payment.Status == "paid" {
+		if payment.Status == sqlcdb.PaymentStatusPaid {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
@@ -80,7 +81,7 @@ func HandleWebhook(db *sql.DB) http.HandlerFunc {
 		// Update payment record
 		_, err = q.UpdatePaymentStatus(r.Context(), sqlcdb.UpdatePaymentStatusParams{
 			ID: payment.ID,
-			Status: "paid",
+			Status: sqlcdb.PaymentStatusPaid,
 			RazorpayPaymentID: sql.NullString{
 				String: payload.Payload.Payment.Entity.ID,
 				Valid:  true,
@@ -97,9 +98,9 @@ func HandleWebhook(db *sql.DB) http.HandlerFunc {
 
 		if _, err := q.UpdateOrderStatus(r.Context(), sqlcdb.UpdateOrderStatusParams{
 			ID:     payment.OrderID,
-			Status: "paid",
+			Status: sqlcdb.OrderStatusPaid,
 		}); err != nil {
-			// If already paid or expired, ignore safely
+			log.Printf("webhook: UpdateOrderStatus failed for order %s: %v", payment.OrderID, err)
 		}
 		w.WriteHeader(http.StatusOK)
 	}
