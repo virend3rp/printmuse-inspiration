@@ -22,7 +22,7 @@ export default function Navbar() {
       pathname === href || pathname.startsWith(href + "/");
 
     return `relative text-sm font-medium transition-colors duration-200 group ${
-      active ? "text-black" : "text-neutral-500 hover:text-black"
+      active ? "text-[var(--color-accent)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
     }`;
   }
 
@@ -30,23 +30,23 @@ export default function Navbar() {
     const active = pathname === href || pathname.startsWith(href + "/");
     return (
       <span
-        className={`absolute -bottom-1 left-0 h-[2px] bg-black rounded-full transition-all duration-200 ${
-          active ? "w-full" : "w-0 group-hover:w-full"
+        className={`absolute -bottom-1 left-0 h-[2px] rounded-full transition-all duration-200 ${
+          active ? "w-full bg-[var(--color-forge)]" : "w-0 group-hover:w-full group-hover:bg-[var(--color-forge)]"
         }`}
       />
     );
   };
 
   return (
-    <header className="border-b border-neutral-200 bg-white sticky top-0 z-30">
+    <header className="border-b sticky top-0 z-30" style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }}>
       <div className="container-system flex items-center justify-between h-16">
 
         {/* Logo */}
         <Link
           href="/"
-          className="text-lg font-extrabold tracking-tight hover:opacity-80 transition-opacity"
+          className="text-lg font-extrabold tracking-tight forge-title hover:opacity-90 transition-opacity"
         >
-          PrintingMuse
+          Forgecraft
         </Link>
 
         {/* Category Links */}
@@ -84,7 +84,7 @@ export default function Navbar() {
           {!user && (
             <Link
               href="/login"
-              className="text-neutral-500 hover:text-black transition-colors duration-200 font-medium"
+              className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors duration-200 font-medium"
             >
               Login
             </Link>
@@ -98,7 +98,7 @@ export default function Navbar() {
               </Link>
               <button
                 onClick={handleLogout}
-                className="text-neutral-500 hover:text-black transition-colors duration-200 font-medium"
+                className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors duration-200 font-medium"
               >
                 Logout
               </button>
@@ -107,14 +107,14 @@ export default function Navbar() {
 
           <button
             onClick={openCart}
-            className="relative flex items-center gap-1.5 text-neutral-500 hover:text-black transition-colors duration-200 font-medium"
+            className="relative flex items-center gap-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors duration-200 font-medium"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
             </svg>
             Cart
             {items.length > 0 && (
-              <span className="absolute -top-2 -right-3 bg-black text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+              <span className="absolute -top-2 -right-3 bg-[var(--color-forge)] text-black text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                 {items.length}
               </span>
             )}

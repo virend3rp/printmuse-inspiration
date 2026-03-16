@@ -1,0 +1,22 @@
+[Unit]
+Description=Forgecraft Next.js Frontend
+After=network.target
+
+[Service]
+Type=simple
+User=ec2-user
+Group=ec2-user
+WorkingDirectory=/home/ec2-user/app/frontend
+ExecStart=/usr/bin/node .next/standalone/server.js
+Environment=PORT=3000
+Environment=HOSTNAME=0.0.0.0
+EnvironmentFile=/home/ec2-user/app/frontend/.env.local
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=forgecraft-frontend
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

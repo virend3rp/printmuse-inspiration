@@ -1,42 +1,82 @@
-import Image from "next/image";
-import Container from "../ui/Container";
-import Section from "../ui/Section";
+"use client";
 
-const featured = [
-  { name: "Dragon Figurine", price: "₹1499", img: "/dragon.png" },
-  { name: "Utility Stand", price: "₹999", img: "/utility.png" },
-  { name: "Moon Lamp", price: "₹1999", img: "/moon-lamp.png" },
-];
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { apiFetch } from "@/lib/api";
+
+const CATEGORIES = ["keychains", "figurines", "utility", "custom"];
 
 export default function Featured() {
+  const [products, setProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      const results = await Promise.allSettled(
+        CATEGORIES.map((cat) =>
+          apiFetch(`/products?category=${cat}&limit=1`)
+        )
+      );
+
+      const items = results
+        .map((r) => (r.status === "fulfilled" ? r.value?.data?.[0] : null))
+        .filter(Boolean);
+
+      setProducts(items);
+    }
+
+    load();
+  }, []);
+
+  if (products.length === 0) return null;
+
   return (
-    <Section>
-      <Container>
+    <section className="section-system" style={{ background: "var(--color-surface)" }}>
+      <div className="container-system">
+        <h2 className="heading-lg mb-8" style={{ color: "var(--color-text-primary)" }}>Featured</h2>
 
-        <h2 className="text-2xl font-semibold mb-10">
-          Featured
-        </h2>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {products.map((product) => {
+            const lowestPrice = product.variants?.length
+              ? Math.min(...product.variants.map((v: any) => v.price))
+              : null;
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {featured.map((item) => (
-            <div
-              key={item.name}
-              className="rounded-xl overflow-hidden border border-neutral-200"
-            >
-              <div className="relative h-[240px]">
-                <Image src={item.img} alt={item.name} fill className="object-cover" />
-              </div>
-              <div className="p-4">
-                <h3 className="font-medium">{item.name}</h3>
-                <p className="text-neutral-500 text-sm">
-                  {item.price}
-                </p>
-              </div>
-            </div>
-          ))}
+            return (
+              <Link
+                key={product.id}
+                href={`/products/${product.category}/${product.slug}`}
+                className="group block rounded-2xl overflow-hidden forge-card transition"
+              >
+                <div className="relative h-[220px] bg-neutral-100">
+                  {product.images?.[0] ? (
+                    <Image
+                      src={product.images[0]}
+                      alt={product.name}
+                      fill
+                      className="object-cover group-hover:scale-105 transition duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-neutral-200" />
+                  )}
+                </div>
+                <div className="p-4" style={{ background: "var(--color-surface-2)" }}>
+                  <p className="text-xs font-semibold uppercase tracking-widest mb-1 capitalize" style={{ color: "var(--color-accent)" }}>
+                    {product.category}
+                  </p>
+                  <h3 className="font-medium text-sm leading-snug line-clamp-1" style={{ color: "var(--color-text-primary)" }}>
+                    {product.name}
+                  </h3>
+                  {lowestPrice !== null && (
+                    <p className="text-sm mt-1" style={{ color: "var(--color-text-secondary)" }}>
+                      From ₹{lowestPrice}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
         </div>
-
-      </Container>
-    </Section>
+      </div>
+    </section>
   );
 }

@@ -14,26 +14,26 @@ function DetailSkeleton() {
     <div className="container-system py-12">
       <div className="grid md:grid-cols-2 gap-12 animate-pulse">
         <div className="space-y-3">
-          <div className="aspect-square bg-neutral-200 rounded-2xl" />
+          <div className="aspect-square rounded-2xl" style={{ background: "var(--color-surface-2)" }} />
           <div className="flex gap-2">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="w-16 h-16 bg-neutral-200 rounded-lg" />
+              <div key={i} className="w-16 h-16 rounded-lg" style={{ background: "var(--color-surface-2)" }} />
             ))}
           </div>
         </div>
         <div className="space-y-4 pt-2">
-          <div className="h-3 bg-neutral-200 rounded w-1/4" />
-          <div className="h-8 bg-neutral-200 rounded w-3/4" />
-          <div className="h-4 bg-neutral-200 rounded w-full" />
-          <div className="h-4 bg-neutral-200 rounded w-5/6" />
-          <div className="h-4 bg-neutral-200 rounded w-4/6" />
+          <div className="h-3 rounded w-1/4" style={{ background: "var(--color-surface-2)" }} />
+          <div className="h-8 rounded w-3/4" style={{ background: "var(--color-surface-2)" }} />
+          <div className="h-4 rounded w-full" style={{ background: "var(--color-surface-2)" }} />
+          <div className="h-4 rounded w-5/6" style={{ background: "var(--color-surface-2)" }} />
+          <div className="h-4 rounded w-4/6" style={{ background: "var(--color-surface-2)" }} />
           <div className="flex gap-2 pt-4">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="h-10 w-24 bg-neutral-200 rounded-xl" />
+              <div key={i} className="h-10 w-24 rounded-xl" style={{ background: "var(--color-surface-2)" }} />
             ))}
           </div>
-          <div className="h-7 bg-neutral-200 rounded w-1/4 mt-2" />
-          <div className="h-12 bg-neutral-200 rounded-xl w-full" />
+          <div className="h-7 rounded w-1/4 mt-2" style={{ background: "var(--color-surface-2)" }} />
+          <div className="h-12 rounded-xl w-full" style={{ background: "var(--color-surface-2)" }} />
         </div>
       </div>
     </div>
@@ -125,21 +125,21 @@ export default function ProductDetailPage() {
   return (
     <div>
       {/* Breadcrumb */}
-      <div className="border-b border-neutral-100">
+      <div className="border-b" style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}>
         <div className="container-system py-3">
-          <p className="text-sm text-neutral-400">
-            <Link href="/" className="hover:underline">
+          <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+            <Link href="/" className="hover:text-[var(--color-accent)] transition-colors">
               Home
             </Link>
             <span className="mx-2">/</span>
             <Link
               href={`/products/${category}`}
-              className="hover:underline capitalize"
+              className="hover:text-[var(--color-accent)] transition-colors capitalize"
             >
               {category}
             </Link>
             <span className="mx-2">/</span>
-            <span className="text-neutral-800">{product.name}</span>
+            <span style={{ color: "var(--color-text-primary)" }}>{product.name}</span>
           </p>
         </div>
       </div>
@@ -149,7 +149,7 @@ export default function ProductDetailPage() {
 
           {/* Left — Image Gallery */}
           <div className="space-y-3">
-            <div className="relative aspect-square rounded-2xl overflow-hidden bg-neutral-100">
+            <div className="relative aspect-square rounded-2xl overflow-hidden" style={{ background: "var(--color-surface-2)" }}>
               <Image
                 src={images[activeImage]}
                 alt={product.name}
@@ -167,8 +167,8 @@ export default function ProductDetailPage() {
                     onClick={() => setActiveImage(i)}
                     className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition ${
                       activeImage === i
-                        ? "border-black"
-                        : "border-transparent opacity-60 hover:opacity-100"
+                        ? "border-[var(--color-accent)]"
+                        : "border-transparent opacity-50 hover:opacity-100"
                     }`}
                   >
                     <Image
@@ -195,14 +195,14 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Description */}
-            <p className="text-[15px] text-neutral-600 leading-relaxed">
+            <p className="text-[15px] leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>
               {product.description}
             </p>
 
             {/* Variants */}
             {product.variants?.length > 0 && (
               <div>
-                <p className="text-sm font-semibold mb-2.5">Select Variant</p>
+                <p className="text-sm font-semibold mb-2.5" style={{ color: "var(--color-text-primary)" }}>Select Variant</p>
                 <div className="flex gap-2 flex-wrap">
                   {product.variants.map((variant: any) => (
                     <button
@@ -210,9 +210,14 @@ export default function ProductDetailPage() {
                       onClick={() => setSelectedVariant(variant)}
                       className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
                         selectedVariant?.id === variant.id
-                          ? "bg-black text-white border-black"
-                          : "border-neutral-300 hover:border-neutral-500 text-neutral-700"
+                          ? "border-[var(--color-accent)] text-[#111]"
+                          : "text-[var(--color-text-secondary)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
                       }`}
+                      style={
+                        selectedVariant?.id === variant.id
+                          ? { background: "var(--color-accent)", borderColor: "var(--color-accent)" }
+                          : { borderColor: "var(--color-border)", background: "var(--color-surface-2)" }
+                      }
                     >
                       {variant.name}
                     </button>
@@ -241,7 +246,14 @@ export default function ProductDetailPage() {
             <button
               onClick={handleAddToCart}
               disabled={adding || !selectedVariant || selectedVariant?.stock === 0}
-              className="w-full bg-black text-white py-4 rounded-xl font-semibold text-sm tracking-wide hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full py-4 rounded-xl font-bold text-sm tracking-wide transition disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                background: "var(--color-accent)",
+                color: "#111",
+                boxShadow: "0 4px 20px rgba(245,166,35,0.25)",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--color-accent-hover)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 8px 32px rgba(245,166,35,0.4)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--color-accent)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 20px rgba(245,166,35,0.25)"; }}
             >
               {adding ? "Adding..." : "Add to Cart"}
             </button>

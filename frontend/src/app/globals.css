@@ -1,77 +1,63 @@
 @import "tailwindcss";
 
 /* ============================
-   DESIGN TOKENS
+   DESIGN TOKENS — FORGECRAFT
 ============================ */
 
 :root {
-  --color-bg: #ffffff;
-  --color-surface: #f8f8f6;
-  --color-border: #e5e5e5;
+  /* Backgrounds — dark forge metal */
+  --color-bg: #0e0c0a;
+  --color-surface: #181410;
+  --color-surface-2: #221d16;
+  --color-surface-3: #2d2620;
 
-  --color-text-primary: #111111;
-  --color-text-secondary: #666666;
+  --color-border: #2e2820;
+  --color-border-subtle: #231f19;
 
-  --color-accent: #8b0000;
-  --color-accent-hover: #6f0000;
+  /* Text */
+  --color-text-primary: #ede8df;
+  --color-text-secondary: #8f8070;
+  --color-text-muted: #5c5245;
+
+  /* Fire amber — the forge accent */
+  --color-accent: #f5a623;
+  --color-accent-hover: #e89410;
+
+  /* Forge glow */
+  --color-forge: #f5b417;
+  --color-forge-dim: #c98b0d;
+  --color-forge-glow: rgba(245, 180, 23, 0.18);
+  --color-forge-glow-strong: rgba(245, 166, 35, 0.35);
 
   --radius-md: 12px;
   --radius-lg: 20px;
 
-  --shadow-soft: 0 4px 20px rgba(0,0,0,0.04);
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --shadow-forge: 0 4px 24px rgba(245, 166, 35, 0.2);
+  --shadow-forge-strong: 0 8px 32px rgba(245, 166, 35, 0.35);
 }
 
-/* SYSTEM CLASSES */
+/* ============================
+   BASE
+============================ */
 
-.container-system {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
+body {
+  background: var(--color-bg);
+  color: var(--color-text-primary);
 }
 
-.section-system {
-  padding: 56px 0; /* tighter */
-}
+/* ============================
+   SYSTEM CLASSES
+============================ */
 
 .container-system {
   max-width: 1160px;
   margin: 0 auto;
-  padding: 0 20px; /* tighter horizontal */
+  padding: 0 20px;
 }
 
-.heading-xl {
-  font-size: 48px;
-  font-weight: 700;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-}
-
-.heading-lg {
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-
-.text-muted {
-  color: #5e5e5e;
-}
-
-.card-system {
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-soft);
-}
-
-.btn-primary {
-  background: var(--color-accent);
-  color: white;
-  padding: 10px 18px;
-  border-radius: 10px;
-  font-weight: 600;
-  transition: 150ms ease;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
+.section-system {
+  padding: 56px 0;
 }
 
 /* ============================
@@ -103,5 +89,79 @@
 
 .text-muted {
   font-size: 14px;
-  color: #5f5f5f;
+  color: var(--color-text-secondary);
+}
+
+/* ============================
+   FIRE GRADIENT TEXT
+============================ */
+
+.forge-title {
+  background: linear-gradient(120deg, #ffd166 0%, #f5a623 45%, #ff6b1a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================
+   COMPONENT SYSTEM
+============================ */
+
+.card-system {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+}
+
+.btn-primary {
+  display: inline-block;
+  background: var(--color-accent);
+  color: #111111;
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  transition: 150ms ease;
+  box-shadow: 0 2px 12px rgba(245, 166, 35, 0.25);
+}
+
+.btn-primary:hover {
+  background: var(--color-accent-hover);
+  box-shadow: var(--shadow-forge-strong);
+  transform: translateY(-2px);
+}
+
+/* ============================
+   FORGE MICROINTERACTIONS
+============================ */
+
+/* Amber underline on nav links */
+.forge-underline::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--color-forge);
+  border-radius: 2px;
+  transition: width 200ms ease;
+}
+.forge-underline:hover::after,
+.forge-underline.active::after {
+  width: 100%;
+}
+
+/* Card with amber border + glow on hover */
+.forge-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+.forge-card:hover {
+  border-color: var(--color-forge-dim);
+  box-shadow: var(--shadow-forge);
 }

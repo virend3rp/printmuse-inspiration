@@ -1,0 +1,21 @@
+[Unit]
+Description=Forgecraft Go Backend
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=ec2-user
+Group=ec2-user
+WorkingDirectory=/home/ec2-user/app/backend
+ExecStart=/home/ec2-user/app/backend/bin/api
+EnvironmentFile=/home/ec2-user/app/backend/.env
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=forgecraft-backend
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

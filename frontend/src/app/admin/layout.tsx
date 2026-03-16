@@ -49,19 +49,19 @@ function linkClass(href: string) {
 
   return `px-3 py-2 rounded-md text-sm transition ${
     active
-      ? "bg-black text-white"
-      : "text-neutral-700 hover:bg-neutral-100"
+      ? "bg-[var(--color-accent)] text-[#111] font-semibold"
+      : "text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] hover:bg-[var(--color-surface-2)]"
   }`;
 }
 
   return (
     <>
 
-      <div className="min-h-screen bg-neutral-50 flex">
+      <div className="min-h-screen flex" style={{ background: "var(--color-bg)" }}>
         {/* Sidebar */}
-        <aside className="w-60 bg-white border-r p-6 flex flex-col justify-between">
+        <aside className="w-60 border-r p-6 flex flex-col justify-between" style={{ background: "var(--color-surface)", borderColor: "var(--color-border)" }}>
           <div className="space-y-8">
-            <h2 className="font-bold text-lg">Admin Panel</h2>
+            <h2 className="font-bold text-lg forge-title">Admin Panel</h2>
 
             <nav className="flex flex-col gap-2">
               <Link href="/admin" className={linkClass("/admin")}>
@@ -80,6 +80,20 @@ function linkClass(href: string) {
                 className={linkClass("/admin/orders")}
               >
                 Orders
+              </Link>
+
+              <Link
+                href="/admin/users"
+                className={linkClass("/admin/users")}
+              >
+                Users
+              </Link>
+
+              <Link
+                href="/admin/analytics"
+                className={linkClass("/admin/analytics")}
+              >
+                Analytics
               </Link>
             </nav>
           </div>

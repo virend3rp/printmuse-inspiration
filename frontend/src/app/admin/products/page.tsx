@@ -1,11 +1,19 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { useAdminProducts } from "@/hooks/admin/useAdminProducts"
+import { fetchProducts } from "@/lib/admin"
 import ProductTable from "@/components/admin/ProductTable"
 
 export default function AdminProductsPage() {
-  const { products, loading } = useAdminProducts()
+  const [products, setProducts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchProducts()
+      .then((res) => setProducts(res.data || []))
+      .finally(() => setLoading(false))
+  }, [])
 
   if (loading) return <p>Loading...</p>
 

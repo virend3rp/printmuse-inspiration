@@ -61,7 +61,6 @@ export async function createProductWithVariants(product: Product) {
 
 export async function updateProduct(id: string, product: Product) {
   const payload = {
-    id,
     name: product.name,
     description: product.description,
     category: product.category,

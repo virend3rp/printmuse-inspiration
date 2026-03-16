@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"expvar"
 	"fmt"
 	"log"
 	"net/http"
@@ -104,11 +105,40 @@ func main() {
 	r.Use(chimiddleware.Recoverer)
 
 	// ------------------------------------------------
+	// METRICS (expvar)
+	// ------------------------------------------------
+
+	requestsTotal := expvar.NewInt("requests_total")
+	expvar.Publish("db_open_connections", expvar.Func(func() any {
+		return pool.Stats().OpenConnections
+	}))
+	expvar.Publish("db_in_use", expvar.Func(func() any {
+		return pool.Stats().InUse
+	}))
+	expvar.Publish("db_idle", expvar.Func(func() any {
+		return pool.Stats().Idle
+	}))
+
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			requestsTotal.Add(1)
+			next.ServeHTTP(w, r)
+		})
+	})
+
+	r.Get("/metrics", expvar.Handler().ServeHTTP)
+
+	// ------------------------------------------------
 	// HEALTH CHECK
 	// ------------------------------------------------
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("OK"))
+		if err := pool.PingContext(r.Context()); err != nil {
+			http.Error(w, `{"status":"degraded","db":"unreachable"}`, http.StatusServiceUnavailable)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"status":"ok","db":"reachable"}`))
 	})
 
 	// ------------------------------------------------
@@ -182,8 +212,11 @@ func main() {
 	// ------------------------------------------------
 
 	server := &http.Server{
-		Addr:    ":" + port,
-		Handler: r,
+		Addr:         ":" + port,
+		Handler:      r,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 
 	go func() {

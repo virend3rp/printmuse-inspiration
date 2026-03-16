@@ -1,7 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 async function refreshToken() {
-  const res = await fetch(`${API_URL}auth/refresh`, {
+  const res = await fetch(`${API_URL}/auth/refresh`, {
     method: "POST",
     credentials: "include",
   });

@@ -10,7 +10,7 @@ export default function CartDrawer() {
   const toast = useToast();
   const router = useRouter();
 
-  async function handleRemove(id: string, name: string) {
+  async function handleRemove(id: string) {
     await removeItem(id);
     toast(`Removed from cart`, "info");
   }
@@ -20,28 +20,29 @@ export default function CartDrawer() {
       {/* Overlay */}
       <div
         onClick={closeCart}
-        className={`fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 z-40 ${
+        className={`fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 z-40 ${
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
       />
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-[420px] bg-white shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 h-full w-[420px] shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
+        style={{ background: "var(--color-surface)", borderLeft: "1px solid var(--color-border)" }}
       >
         {/* Header */}
-        <div className="p-6 border-b flex justify-between items-center">
-          <h2 className="text-lg font-semibold">
+        <div className="p-6 flex justify-between items-center" style={{ borderBottom: "1px solid var(--color-border)" }}>
+          <h2 className="text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
             Your Cart
             {items.length > 0 && (
-              <span className="ml-2 text-sm font-normal text-neutral-500">
+              <span className="ml-2 text-sm font-normal" style={{ color: "var(--color-text-secondary)" }}>
                 ({items.length} {items.length === 1 ? "item" : "items"})
               </span>
             )}
           </h2>
-          <button onClick={closeCart} className="text-xl hover:opacity-60">
+          <button onClick={closeCart} className="text-xl hover:text-[var(--color-accent)] transition-colors" style={{ color: "var(--color-text-secondary)" }}>
             ✕
           </button>
         </div>
@@ -50,13 +51,14 @@ export default function CartDrawer() {
         <div className="flex-1 overflow-y-auto p-6">
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center gap-4">
-              <p className="text-xl font-semibold">Your cart is empty</p>
-              <p className="text-sm text-neutral-500">
+              <p className="text-xl font-semibold" style={{ color: "var(--color-text-primary)" }}>Your cart is empty</p>
+              <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
                 Add some products to get started.
               </p>
               <button
                 onClick={closeCart}
-                className="bg-black text-white px-6 py-3 rounded-xl hover:opacity-90 transition text-sm font-medium"
+                className="px-6 py-3 rounded-xl transition text-sm font-bold"
+                style={{ background: "var(--color-accent)", color: "#111", boxShadow: "0 4px 16px rgba(245,166,35,0.25)" }}
               >
                 Continue Shopping
               </button>
@@ -65,9 +67,8 @@ export default function CartDrawer() {
             <div className="space-y-5">
               {items.map((item) => (
                 <div key={item.id} className="flex gap-4 items-start">
-                  {/* Product image */}
                   {item.images?.[0] && (
-                    <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-neutral-100 flex-shrink-0">
+                    <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0" style={{ background: "var(--color-surface-2)" }}>
                       <Image
                         src={item.images[0]}
                         alt={item.product_name}
@@ -77,23 +78,22 @@ export default function CartDrawer() {
                     </div>
                   )}
 
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">
+                    <p className="font-medium text-sm truncate" style={{ color: "var(--color-text-primary)" }}>
                       {item.product_name}
                     </p>
-                    <p className="text-xs text-neutral-500 mt-0.5">
+                    <p className="text-xs mt-0.5" style={{ color: "var(--color-text-secondary)" }}>
                       {item.variant_name} · Qty {item.qty}
                     </p>
-                    <p className="text-sm font-semibold mt-1">
+                    <p className="text-sm font-semibold mt-1" style={{ color: "var(--color-accent)" }}>
                       ₹{item.price * item.qty}
                     </p>
                   </div>
 
-                  {/* Remove */}
                   <button
-                    onClick={() => handleRemove(item.id, item.product_name)}
-                    className="text-neutral-400 hover:text-red-500 transition text-lg leading-none flex-shrink-0 mt-0.5"
+                    onClick={() => handleRemove(item.id)}
+                    className="text-lg leading-none flex-shrink-0 mt-0.5 transition-colors hover:text-red-400"
+                    style={{ color: "var(--color-text-muted)" }}
                     aria-label="Remove item"
                   >
                     ✕
@@ -106,17 +106,15 @@ export default function CartDrawer() {
 
         {/* Footer */}
         {items.length > 0 && (
-          <div className="border-t p-6 space-y-4">
-            <div className="flex justify-between font-semibold text-lg">
+          <div className="p-6 space-y-4" style={{ borderTop: "1px solid var(--color-border)" }}>
+            <div className="flex justify-between font-semibold text-lg" style={{ color: "var(--color-text-primary)" }}>
               <span>Total</span>
-              <span>₹{total}</span>
+              <span style={{ color: "var(--color-accent)" }}>₹{total}</span>
             </div>
             <button
-              onClick={() => {
-                closeCart();
-                router.push("/checkout");
-              }}
-              className="w-full bg-black text-white py-3.5 rounded-xl hover:opacity-90 transition font-semibold text-sm"
+              onClick={() => { closeCart(); router.push("/checkout"); }}
+              className="w-full py-3.5 rounded-xl font-bold text-sm transition"
+              style={{ background: "var(--color-accent)", color: "#111", boxShadow: "0 4px 20px rgba(245,166,35,0.25)" }}
             >
               Checkout
             </button>

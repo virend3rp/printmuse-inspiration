@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function LoginPage() {
+function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
-const redirect = searchParams.get("redirect") || "/"; 
+  const redirect = searchParams.get("redirect") || "/";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,40 +18,47 @@ const redirect = searchParams.get("redirect") || "/";
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
-  e.preventDefault();
+    e.preventDefault();
 
-  const trimmedEmail = email.trim();
-  const trimmedPassword = password.trim();
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
 
-  if (!trimmedEmail || !trimmedPassword) {
-    setError("Email and password are required.");
-    return;
+    if (!trimmedEmail || !trimmedPassword) {
+      setError("Email and password are required.");
+      return;
+    }
+
+    setError(null);
+    setLoading(true);
+
+    try {
+      await login(trimmedEmail, trimmedPassword);
+      router.push(redirect);
+      router.refresh();
+    } catch {
+      setError("Invalid email or password.");
+    } finally {
+      setLoading(false);
+    }
   }
 
-  setError(null);
-  setLoading(true);
-
-  try {
-    await login(trimmedEmail, trimmedPassword);
-    router.push(redirect);
-    router.refresh(); // refresh layout so navbar updates
-  } catch {
-    setError("Invalid email or password.");
-  } finally {
-    setLoading(false);
-  }
-}
+  const inputStyle = {
+    background: "var(--color-surface-2)",
+    border: "1px solid var(--color-border)",
+    color: "var(--color-text-primary)",
+  };
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6 bg-neutral-50">
+    <main className="min-h-screen flex items-center justify-center p-6" style={{ background: "var(--color-bg)" }}>
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md bg-white p-8 rounded-lg border border-neutral-200 flex flex-col gap-5"
+        className="w-full max-w-md p-8 rounded-2xl flex flex-col gap-5"
+        style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
       >
-        <h1 className="text-2xl font-semibold text-center">Login</h1>
+        <h1 className="text-2xl font-bold text-center forge-title">Login</h1>
 
         {error && (
-          <p className="text-red-600 text-sm text-center">{error}</p>
+          <p className="text-red-400 text-sm text-center">{error}</p>
         )}
 
         <input
@@ -60,7 +67,8 @@ const redirect = searchParams.get("redirect") || "/";
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="border border-neutral-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+          className="p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] placeholder:text-[var(--color-text-muted)]"
+          style={inputStyle}
         />
 
         <input
@@ -69,27 +77,38 @@ const redirect = searchParams.get("redirect") || "/";
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="border border-neutral-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+          className="p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] placeholder:text-[var(--color-text-muted)]"
+          style={inputStyle}
         />
 
         <button
           type="submit"
           disabled={loading || !email || !password}
-          className="bg-black text-white py-3 rounded-md disabled:opacity-50"
+          className="py-3 rounded-xl font-bold disabled:opacity-40 transition"
+          style={{ background: "var(--color-accent)", color: "#111", boxShadow: "0 4px 16px rgba(245,166,35,0.25)" }}
         >
           {loading ? "Logging in..." : "Login"}
         </button>
 
-        <p className="text-sm text-center text-neutral-600">
-          Don't have an account?{" "}
+        <p className="text-sm text-center" style={{ color: "var(--color-text-secondary)" }}>
+          Don&apos;t have an account?{" "}
           <Link
             href={`/register?redirect=${redirect}`}
-            className="text-black underline"
+            className="font-semibold hover:opacity-80 transition"
+            style={{ color: "var(--color-accent)" }}
           >
             Register
           </Link>
         </p>
       </form>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

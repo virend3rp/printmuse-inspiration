@@ -12,9 +12,9 @@ export default function Footer() {
 
           {/* Brand */}
           <div className="space-y-4">
-            <h3 className="font-extrabold text-lg tracking-tight">PrintingMuse</h3>
+            <h3 className="font-extrabold text-lg tracking-tight">Forgecraft</h3>
             <p className="text-neutral-400 leading-relaxed text-[13px]">
-              Playful 3D printed creations crafted with imagination.
+              Custom 3D printed creations forged with precision.
               Designed for collectors, hobbyists, and curious minds.
             </p>
             {/* Social icons */}
@@ -31,7 +31,7 @@ export default function Footer() {
                 </svg>
               </a>
               <a
-                href="mailto:hello@printingmuse.com"
+                href="mailto:hello@forgecraft.com"
                 className="w-8 h-8 rounded-full bg-neutral-800 hover:bg-white hover:text-black transition-colors duration-200 flex items-center justify-center"
                 aria-label="Email"
               >
@@ -62,7 +62,7 @@ export default function Footer() {
             <div className="flex flex-col gap-2.5">
               <Link href="/login"  className={footerLink}>Login</Link>
               <Link href="/orders" className={footerLink}>My Orders</Link>
-              <a href="mailto:hello@printingmuse.com" className={footerLink}>Support</a>
+              <a href="mailto:hello@forgecraft.com" className={footerLink}>Support</a>
             </div>
           </div>
 
@@ -70,7 +70,7 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="border-t border-neutral-800 mt-12 pt-6 text-xs text-neutral-500 flex flex-col md:flex-row justify-between gap-3">
-          <p>© {new Date().getFullYear()} PrintingMuse. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Forgecraft. All rights reserved.</p>
           <div className="flex gap-5">
             <Link href="/privacy" className="hover:text-white transition-colors duration-200">Privacy</Link>
             <Link href="/terms"   className="hover:text-white transition-colors duration-200">Terms</Link>

@@ -32,6 +32,12 @@ function isAddressComplete(a: AddressForm) {
   return Object.values(a).every((v) => v.trim() !== "");
 }
 
+const inputStyle = {
+  background: "var(--color-surface-2)",
+  border: "1px solid var(--color-border)",
+  color: "var(--color-text-primary)",
+};
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -65,7 +71,6 @@ export default function CheckoutPage() {
     setProcessing(true);
 
     try {
-      // 1️⃣ Create Order with shipping address
       const orderRes = await apiFetch("/orders", {
         method: "POST",
         body: JSON.stringify({ shipping_address: formatAddress(address) }),
@@ -73,14 +78,12 @@ export default function CheckoutPage() {
 
       const order = orderRes.data;
 
-      // 2️⃣ Create Razorpay Payment
       const paymentRes = await apiFetch(`/orders/${order.id}/pay`, {
         method: "POST",
       });
 
       const { razorpay_order_id } = paymentRes.data;
 
-      // 3️⃣ Open Razorpay modal
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: order.total * 100,
@@ -108,9 +111,9 @@ export default function CheckoutPage() {
     return (
       <div className="container-system py-20 animate-pulse">
         <div className="max-w-2xl mx-auto space-y-4">
-          <div className="h-8 bg-neutral-200 rounded w-48" />
-          <div className="h-48 bg-neutral-200 rounded-2xl" />
-          <div className="h-12 bg-neutral-200 rounded-xl" />
+          <div className="h-8 rounded w-48" style={{ background: "var(--color-surface-2)" }} />
+          <div className="h-48 rounded-2xl" style={{ background: "var(--color-surface-2)" }} />
+          <div className="h-12 rounded-xl" style={{ background: "var(--color-surface-2)" }} />
         </div>
       </div>
     );
@@ -119,8 +122,8 @@ export default function CheckoutPage() {
   if (!cart?.items?.length) {
     return (
       <div className="container-system py-20 text-center">
-        <p className="text-xl font-semibold mb-2">Your cart is empty</p>
-        <a href="/products/keychains" className="text-sm text-neutral-500 hover:underline">
+        <p className="text-xl font-semibold mb-2" style={{ color: "var(--color-text-primary)" }}>Your cart is empty</p>
+        <a href="/products/keychains" className="text-sm hover:text-[var(--color-accent)] transition-colors" style={{ color: "var(--color-text-secondary)" }}>
           Continue shopping →
         </a>
       </div>
@@ -131,17 +134,20 @@ export default function CheckoutPage() {
     <div className="container-system py-12">
       <div className="max-w-2xl mx-auto space-y-8">
 
-        <h1 className="heading-lg">Checkout</h1>
+        <h1 className="heading-lg" style={{ color: "var(--color-text-primary)" }}>Checkout</h1>
 
         {/* Step tabs */}
-        <div className="flex gap-1 bg-neutral-100 p-1 rounded-xl w-fit">
+        <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ background: "var(--color-surface-2)" }}>
           {(["address", "summary"] as const).map((s) => (
             <button
               key={s}
               onClick={() => s === "summary" && isAddressComplete(address) ? setStep(s) : setStep("address")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition capitalize ${
-                step === s ? "bg-white shadow-sm" : "text-neutral-500"
-              }`}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition capitalize"
+              style={
+                step === s
+                  ? { background: "var(--color-accent)", color: "#111", fontWeight: 700 }
+                  : { color: "var(--color-text-secondary)" }
+              }
             >
               {s === "address" ? "1. Address" : "2. Review & Pay"}
             </button>
@@ -162,12 +168,13 @@ export default function CheckoutPage() {
                 ] as const
               ).map(({ field, label, cols }) => (
                 <div key={field} className={cols === 2 ? "col-span-2" : ""}>
-                  <label className="block text-sm font-medium mb-1">{label}</label>
+                  <label className="block text-sm font-medium mb-1" style={{ color: "var(--color-text-secondary)" }}>{label}</label>
                   <input
                     value={address[field]}
                     onChange={(e) => updateAddress(field, e.target.value)}
                     placeholder={label}
-                    className="w-full border border-neutral-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                    className="w-full rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] placeholder:text-[var(--color-text-muted)]"
+                    style={inputStyle}
                   />
                 </div>
               ))}
@@ -176,7 +183,8 @@ export default function CheckoutPage() {
             <button
               onClick={() => isAddressComplete(address) && setStep("summary")}
               disabled={!isAddressComplete(address)}
-              className="w-full bg-black text-white py-4 rounded-xl font-semibold text-sm hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full py-4 rounded-xl font-bold text-sm transition disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: "var(--color-accent)", color: "#111", boxShadow: "0 4px 20px rgba(245,166,35,0.25)" }}
             >
               Continue to Review
             </button>
@@ -186,17 +194,18 @@ export default function CheckoutPage() {
         {step === "summary" && (
           <div className="space-y-6">
             {/* Address summary */}
-            <div className="bg-neutral-50 rounded-2xl p-5">
+            <div className="rounded-2xl p-5" style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-border)" }}>
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-sm font-semibold mb-1">Shipping to</p>
-                  <p className="text-sm text-neutral-600">{address.name}</p>
-                  <p className="text-sm text-neutral-600">{address.line1}, {address.city}, {address.state} {address.pincode}</p>
-                  <p className="text-sm text-neutral-600">{address.phone}</p>
+                  <p className="text-sm font-semibold mb-1" style={{ color: "var(--color-text-primary)" }}>Shipping to</p>
+                  <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>{address.name}</p>
+                  <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>{address.line1}, {address.city}, {address.state} {address.pincode}</p>
+                  <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>{address.phone}</p>
                 </div>
                 <button
                   onClick={() => setStep("address")}
-                  className="text-xs text-neutral-500 hover:underline"
+                  className="text-xs hover:text-[var(--color-accent)] transition-colors"
+                  style={{ color: "var(--color-text-muted)" }}
                 >
                   Edit
                 </button>
@@ -204,28 +213,36 @@ export default function CheckoutPage() {
             </div>
 
             {/* Items */}
-            <div className="divide-y divide-neutral-100 border border-neutral-200 rounded-2xl overflow-hidden">
-              {cart.items.map((item: any) => (
-                <div key={item.id} className="flex justify-between px-5 py-4">
+            <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid var(--color-border)" }}>
+              {cart.items.map((item: any, i: number) => (
+                <div
+                  key={item.id}
+                  className="flex justify-between px-5 py-4"
+                  style={{
+                    borderTop: i > 0 ? "1px solid var(--color-border)" : undefined,
+                    background: "var(--color-surface)",
+                  }}
+                >
                   <div>
-                    <p className="text-sm font-medium">{item.variant_name ?? item.name}</p>
-                    <p className="text-xs text-neutral-500">Qty: {item.qty}</p>
+                    <p className="text-sm font-medium" style={{ color: "var(--color-text-primary)" }}>{item.variant_name ?? item.name}</p>
+                    <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>Qty: {item.qty}</p>
                   </div>
-                  <p className="text-sm font-semibold">₹{item.price * item.qty}</p>
+                  <p className="text-sm font-semibold" style={{ color: "var(--color-accent)" }}>₹{item.price * item.qty}</p>
                 </div>
               ))}
             </div>
 
             {/* Total */}
-            <div className="flex justify-between items-center border-t border-neutral-200 pt-4">
-              <p className="font-semibold">Total</p>
-              <p className="text-2xl font-bold">₹{cart.total}</p>
+            <div className="flex justify-between items-center pt-4" style={{ borderTop: "1px solid var(--color-border)" }}>
+              <p className="font-semibold" style={{ color: "var(--color-text-primary)" }}>Total</p>
+              <p className="text-2xl font-bold" style={{ color: "var(--color-accent)" }}>₹{cart.total}</p>
             </div>
 
             <button
               onClick={handleCheckout}
               disabled={processing}
-              className="w-full bg-black text-white py-4 rounded-xl font-semibold text-sm hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full py-4 rounded-xl font-bold text-sm transition disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: "var(--color-accent)", color: "#111", boxShadow: "0 4px 20px rgba(245,166,35,0.25)" }}
             >
               {processing ? "Processing..." : "Pay Now"}
             </button>

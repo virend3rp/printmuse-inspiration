@@ -50,8 +50,15 @@ export default function ProductImages({
       {images.length > 0 && (
         <div className="flex gap-3 flex-wrap pt-2">
           {images.map((img) => (
-            <div key={img} className="relative w-20 h-20 rounded border overflow-hidden">
+            <div key={img} className="relative w-20 h-20 rounded border overflow-hidden group">
               <Image src={img} alt="" fill className="object-cover" />
+              <button
+                type="button"
+                onClick={() => onChange(images.filter((i) => i !== img))}
+                className="absolute inset-0 bg-black/50 text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
+              >
+                Remove
+              </button>
             </div>
           ))}
         </div>

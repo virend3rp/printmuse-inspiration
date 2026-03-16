@@ -8,6 +8,7 @@ import {
   ReactNode,
 } from "react";
 import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 
 interface CartItem {
   id: string;
@@ -32,6 +33,7 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [items, setItems] = useState<CartItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -69,7 +71,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     refreshCart();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   return (
     <CartContext.Provider
