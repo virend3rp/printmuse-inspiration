@@ -29,7 +29,7 @@ export default function Hero() {
 
         <div className="relative rounded-2xl overflow-hidden h-[380px]" style={{ background: "var(--color-surface-2)" }}>
           <Image
-            src="/hero.png"
+            src={`${process.env.NEXT_PUBLIC_S3_BASE_URL}/hero.png`}
             alt="Forgecraft products"
             fill
             className="object-cover"

@@ -1,11 +1,13 @@
 import Link from "next/link";
 import Image from "next/image";
 
+const S3 = process.env.NEXT_PUBLIC_S3_BASE_URL;
+
 const categories = [
-  { title: "Keychains", href: "/products/keychains", img: "/keychains.jpg" },
-  { title: "Figurines", href: "/products/figurines", img: "/figurines.png" },
-  { title: "Utility", href: "/products/utility", img: "/utility.png" },
-  { title: "Custom", href: "/products/custom", img: "/utility.png" },
+  { title: "Keychains", href: "/products/keychains", img: `${S3}/keychains.jpg` },
+  { title: "Figurines", href: "/products/figurines", img: `${S3}/figurines.png` },
+  { title: "Utility", href: "/products/utility", img: `${S3}/utility.png` },
+  { title: "Custom", href: "/products/custom", img: `${S3}/utility.png` },
 ];
 
 export default function Categories() {
