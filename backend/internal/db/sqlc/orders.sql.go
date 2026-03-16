@@ -307,13 +307,13 @@ func (q *Queries) ListOrdersByUserID(ctx context.Context, userID uuid.UUID) ([]L
 
 const updateOrderStatus = `-- name: UpdateOrderStatus :one
 UPDATE orders
-SET status = $1,
+SET status = $1::order_status,
     updated_at = NOW()
 WHERE id = $2
 AND (
-    (status = 'pending'   AND $1 IN ('paid', 'expired', 'cancelled'))
-    OR (status = 'paid'   AND $1 IN ('shipped', 'cancelled'))
-    OR (status = 'shipped' AND $1 IN ('delivered', 'cancelled'))
+    (status = 'pending'   AND $1::text IN ('paid', 'expired', 'cancelled'))
+    OR (status = 'paid'   AND $1::text IN ('shipped', 'cancelled'))
+    OR (status = 'shipped' AND $1::text IN ('delivered', 'cancelled'))
 )
 RETURNING id, user_id, status, total, expires_at, created_at, updated_at, shipping_address
 `

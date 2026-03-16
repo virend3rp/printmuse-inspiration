@@ -21,13 +21,13 @@ GROUP BY o.id;
 
 -- name: UpdateOrderStatus :one
 UPDATE orders
-SET status = @status,
+SET status = @status::order_status,
     updated_at = NOW()
 WHERE id = @id
 AND (
-    (status = 'pending'   AND @status IN ('paid', 'expired', 'cancelled'))
-    OR (status = 'paid'   AND @status IN ('shipped', 'cancelled'))
-    OR (status = 'shipped' AND @status IN ('delivered', 'cancelled'))
+    (status = 'pending'   AND @status::text IN ('paid', 'expired', 'cancelled'))
+    OR (status = 'paid'   AND @status::text IN ('shipped', 'cancelled'))
+    OR (status = 'shipped' AND @status::text IN ('delivered', 'cancelled'))
 )
 RETURNING *;
 -- name: ListExpiredPendingOrders :many
