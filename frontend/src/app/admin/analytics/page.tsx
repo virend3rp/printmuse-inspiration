@@ -23,12 +23,12 @@ export default function AdminAnalyticsPage() {
     const orders = res.data || [];
 
     const paidOrders = orders.filter(
-      (o: any) => o.status === "paid"
+      (o: any) => ["paid", "shipped", "delivered"].includes(o.status)
     );
 
     const chartData = paidOrders.map((o: any) => ({
-      date: new Date(o.created_at).toLocaleDateString(),
-      revenue: o.total,
+      date: new Date(o.created_at).toLocaleDateString("en-IN"),
+      revenue: Math.round(o.total / 100),
     }));
 
     setData(chartData);
